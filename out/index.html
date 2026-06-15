@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt Tester</title>
+</head>
+<body>
+<h1>Receipt Tester</h1>
+<h2>Authenticate to Receipt Printer API</h2>
+<div id="loginDiv">
+</div>
+<a></a>
+<h2>Print text</h2>
+<textarea id="textField"></textarea>
+<div><button id="printTextButton">Print</button></div>
+<div id="lastPrintedDiv">
+</div>
+<div id="textResponseDiv">
+</div>
+<h2>Print an image</h2>
+<input type="file" id="imagePicker" accept=".pbm,image/jpeg,image/png,image/gif,image/bmp,image/x-ms-bmp" />
+<div style="margin-top: 4px"><button id="printImageButton" disabled>Print</button></div>
+<div id="imageResponseDiv">
+</div>
+<h2>Send raw ESC/POS (under construction)</h2>
+<p>Input ESC/POS in hexadecimal.</p>
+<textarea id="escPosField"></textarea>
+<div><button id="sendEscPosButton">Submit</button></div>
+<div id="escPosResponseDiv">
+</div>
+<br>
+<p>View the <a href="">source code</a><p>
+<script src="main.js"></script>
+</body>
+</html>
