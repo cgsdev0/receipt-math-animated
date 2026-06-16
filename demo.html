@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>receipt-math (OCaml + Core via js_of_ocaml)</title>
 <style>
-canvas {
+canvas {/
   height: 100vh;
   image-rendering: pixelated;
   border: 1px solid black;
@@ -20,6 +20,15 @@ html {
 </style>
 </head>
 <body>
+<script src="main.js"></script>
 <script src="_build/default/receipt_math.js"></script>
+<script>
+  for (let i = 0; i < 6; ++i) {
+    const { c, e } = foo();
+    c.addEventListener('click', e => {
+      sendCanvasToPrinter(c);
+    });
+  }
+</script>
 </body>
 </html>

@@ -87,6 +87,7 @@ let evil_thing image_data t =
 ;;
 
 let () =
+  Js.Unsafe.global##.foo := Js.wrap_callback (fun () ->
   let document = Dom_html.document in
   let body = document##.body in
   let c = Canvas.create ~width:256 ~height:256 in
@@ -100,16 +101,19 @@ let () =
       simplify
         (Quickcheck.random_value ~size:4 ~seed:`Nondeterministic quickcheck_generator)
     in
-    print_s (sexp_of_t t);
-    print_s (sexp_of_int (size t));
     let s = size t in
     if s > 5 then t else generate ()
   in
   let t = generate () in
+  let equation = Sexp.to_string (sexp_of_t t) in
   evil_thing image_data t;
   (* evil_thing image_data (Xor (X, Y)); *)
   mirror ~mirror_x:false ~mirror_y:false image_data;
   Ctx2d.put_image_data ctx image_data ~x:0 ~y:0;
   ignore (body##appendChild (Canvas.dom_element c :> Dom.node Js.t));
-  ()
+  object%js
+      val c = Canvas.dom_element c
+      val e = Js.string equation
+  end
+  )
 ;;
