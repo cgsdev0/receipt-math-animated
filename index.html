@@ -25,7 +25,7 @@ canvas {
   setupLoginSection();
   for (let i = 0; i < 6; ++i) {
     const { c, e } = foo();
-    c.addEventListener('click', e => {
+    c.addEventListener('click', ev => {
       sendCanvasToPrinter(c, e);
     });
   }

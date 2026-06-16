@@ -14,8 +14,8 @@ function sendCanvasToPrinter(canvas, text) {
     console.error("You are not logged into Receipt API Server! Aborting...");
     return;
   }
-  canvas.toBlob((blob) => {
-    fetch("https://receipt.recurse.com/text", {
+  canvas.toBlob(async (blob) => {
+    await fetch("https://receipt.recurse.com/text", {
       method: "POST",
       credentials: "include",
       headers: {
@@ -24,7 +24,7 @@ function sendCanvasToPrinter(canvas, text) {
       },
       body: JSON.stringify({
         text,
-        coda: "none",
+        coda: "newline",
       }),
     });
     fetch("https://receipt.recurse.com/image", {
@@ -48,7 +48,7 @@ function p(s) {
 function a(s, url) {
   const el = document.createElement("a");
   el.innerHTML = s;
-  el.src = url;
+  el.href = url;
   return el;
 }
 function setupLoginSection() {
