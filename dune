@@ -5,9 +5,10 @@
  (js_of_ocaml
   (flags --effects=cps))
  (preprocess
-  (pps js_of_ocaml-ppx)))
+  (pps ppx_jane js_of_ocaml-ppx)))
 
 ; Copy the compiled JS out to a stable name next to index.html.
+
 (rule
  (target receipt_math.js)
  (deps receipt_math.bc.js)

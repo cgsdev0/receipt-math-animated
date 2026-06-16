@@ -3,10 +3,23 @@
 <head>
   <meta charset="utf-8">
   <title>receipt-math (OCaml + Core via js_of_ocaml)</title>
+<style>
+canvas {
+  height: 100vh;
+  image-rendering: pixelated;
+  border: 1px solid black;
+  box-sizing: border-box;
+}
+* {
+  margin: 0;
+  padding: 0;
+}
+html {
+  overflow: hidden;
+}
+</style>
 </head>
 <body>
-<h1>receipt-math</h1>
-<p>Output from the OCaml/Core code (also see the browser console):</p>
-<script src="receipt_math.js"></script>
+<script src="_build/default/receipt_math.js"></script>
 </body>
 </html>

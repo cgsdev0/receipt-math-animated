@@ -1,7 +1,7 @@
 open! Core
 open! Js_of_ocaml
-module Dom_float = Virtual_dom.Dom_float
 
+let to_js_string value = (Js.number_of_float value)##toString
 let the_string_''width'' = Js.string "width"
 let the_string_''height'' = Js.string "height"
 
@@ -79,11 +79,11 @@ module Canvas1 = struct
     canvas##setAttribute the_string_''width'' (Js.string (Int.to_string width));
     canvas##setAttribute the_string_''height'' (Js.string (Int.to_string height));
     canvas##.style##.width
-    := Dom_float.to_js_string
+    := to_js_string
          (Int.to_float width
           /. Js_of_ocaml.Js.float_of_number Dom_html.window##.devicePixelRatio);
     canvas##.style##.height
-    := Dom_float.to_js_string
+    := to_js_string
          (Int.to_float height
           /. Js_of_ocaml.Js.float_of_number Dom_html.window##.devicePixelRatio);
     (Obj.magic : Dom_html.canvasElement Js.t -> extendedCanvasElement Js.t) canvas
