@@ -1,3 +1,4 @@
+.direnv/
 _build/
 _opam/
 receipt_path.js
