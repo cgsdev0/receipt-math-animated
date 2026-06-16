@@ -40,6 +40,7 @@ function sendCanvasToPrinter(canvas, text) {
 }
 
 function setupLoginSection() {
+  const csrf = parseCookies(document.cookie).receipt_csrf;
   if (!window.location.origin.match(/.recurse.com\/?$/)) {
     loginDiv.appendChild(
       p(
@@ -53,7 +54,7 @@ function setupLoginSection() {
     );
     return;
   }
-  if (getReceiptCsrfCookie()) {
+  if (csrf) {
     loginDiv.appendChild(p("You are logged in."));
     return;
   }
