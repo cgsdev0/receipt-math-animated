@@ -157,6 +157,18 @@ let tonemap image_data =
   done
 ;;
 
+let color_ramp image_data =
+  let a = Oklab.of_rgb ~r:1.0 ~g:0.0 ~b:0.0 () in
+  let b = Oklab.of_rgb ~r:0.0 ~g:1.0 ~b:0.0 () in
+  for y = 0 to 255 do
+    for x = 0 to 255 do
+      let color = Image_data.get_r image_data ~x ~y in
+      let r, g, b = Oklab.to_rgb (Oklab.lerp a b ((Float.of_int color) /. 255.0)) in
+      Image_data.set image_data ~x ~y ~a:255 ~b ~g ~r
+    done
+  done;
+;;
+
 let () =
   Js.Unsafe.global##.foo
   := Js.wrap_callback (fun () ->
@@ -181,6 +193,7 @@ let () =
        let equation = Sexp.to_string_hum ~indent:2 ~max_width:42 (sexp_of_t t) in
        evil_thing image_data t;
        tonemap image_data;
+       (* color_ramp image_data; *)
        Ctx2d.put_image_data ctx image_data ~x:0 ~y:0;
        let c2 = Canvas.create ~width:512 ~height:512 in
        let ctx2 = Canvas.ctx2d c2 in
