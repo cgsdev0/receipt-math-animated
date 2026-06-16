@@ -39,6 +39,18 @@ function sendCanvasToPrinter(canvas, text) {
   }, "image/png");
 }
 
+function p(s) {
+  const el = document.createElement("p");
+  el.innerHTML = s;
+  return el;
+}
+
+function a(s, url) {
+  const el = document.createElement("a");
+  el.innerHTML = s;
+  el.src = url;
+  return el;
+}
 function setupLoginSection() {
   const csrf = parseCookies(document.cookie).receipt_csrf;
   if (!window.location.origin.match(/.recurse.com\/?$/)) {
