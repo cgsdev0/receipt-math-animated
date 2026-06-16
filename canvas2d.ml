@@ -56,6 +56,7 @@ module Ctx2d0 = struct
       Dom_html.imageData Js.t -> int -> int -> int -> int -> int -> int -> unit Js.meth
 
     method filter : Js.js_string Js.t Js.prop
+    method imageSmoothingEnabled : bool Js.t Js.prop
   end
 
   type t = Canvas0.t * extendedCanvasContext Js.t
@@ -134,6 +135,7 @@ module Ctx2d1 = struct
     in
     let w = Option.value w ~default:sw in
     let h = Option.value h ~default:sh in
+    ctx##.imageSmoothingEnabled := Js._false;
     ctx##drawImage_fullFromCanvas
       (canvas :> Dom_html.canvasElement Js.t)
       (Js_of_ocaml.Js.number_of_float sx)

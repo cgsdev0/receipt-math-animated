@@ -68,6 +68,32 @@ let evil_thing image_data t =
   done
 ;;
 
+let remap color min max =
+  let range = max - min in
+  let ratio = 255.0 /. Float.of_int range in
+  match range with
+  | 0 -> color
+  | _ -> Int.of_float (Float.of_int (color - min) *. ratio)
+
+let tonemap image_data =
+  let min_value = ref 255 in
+  let max_value = ref 0 in
+  for y = 0 to 255 do
+    for x = 0 to 255 do
+      let color = Image_data.get_r image_data ~x ~y in
+      if color < !min_value then min_value := color;
+      if color > !max_value then max_value := color;
+    done
+  done;
+  for y = 0 to 255 do
+    for x = 0 to 255 do
+      let color = Image_data.get_r image_data ~x ~y in
+      let color = remap color !min_value !max_value in
+      Image_data.set image_data ~x ~y ~g:color ~b:color ~r:color ~a:255
+    done
+  done
+;;
+
 let () =
   Js.Unsafe.global##.foo := Js.wrap_callback (fun () ->
   let document = Dom_html.document in
@@ -89,6 +115,7 @@ let () =
   let t = generate () in
   let equation = Sexp.to_string (sexp_of_t t) in
   evil_thing image_data t;
+  tonemap image_data;
   Ctx2d.put_image_data ctx image_data ~x:0 ~y:0;
 
   let c2 = Canvas.create ~width:512 ~height:512 in

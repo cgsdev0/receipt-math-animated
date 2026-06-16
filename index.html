@@ -5,6 +5,8 @@
   <title>receipt-math (OCaml + Core via js_of_ocaml)</title>
 <style>
 canvas {
+  height: 256px;
+  width: 256px;
   image-rendering: pixelated;
   border: 1px solid black;
   box-sizing: border-box;
@@ -16,13 +18,15 @@ canvas {
 </style>
 </head>
 <body>
+  <div id="loginDiv"></div>
 <script src="main.js"></script>
 <script src="receipt_math.js"></script>
 <script>
+  setupLoginSection();
   for (let i = 0; i < 6; ++i) {
     const { c, e } = foo();
     c.addEventListener('click', e => {
-      sendCanvasToPrinter(c);
+      sendCanvasToPrinter(c, e);
     });
   }
 </script>
