@@ -59,24 +59,6 @@ let rec eval ~x ~y t =
   | MirrorY a -> eval ~y ~x:(Int.abs (Int.abs (128 - x) - 1)) a
 ;;
 
-let mirror ?(mirror_x = false) ?(mirror_y = false) image_data =
-  match mirror_x, mirror_y with
-  | false, false -> ()
-  | _ ->
-    for y = 0 to 255 do
-      for x = 0 to 255 do
-        if mirror_y && x >= 128
-        then (
-          let color = Image_data.get_r image_data ~x:(255 - x) ~y in
-          Image_data.set image_data ~x ~y ~g:color ~b:color ~r:color ~a:255);
-        if mirror_x && y >= 128
-        then (
-          let color = Image_data.get_r image_data ~y:(255 - y) ~x in
-          Image_data.set image_data ~x ~y ~g:color ~b:color ~r:color ~a:255)
-      done
-    done
-;;
-
 let evil_thing image_data t =
   for y = 0 to 255 do
     for x = 0 to 255 do
@@ -107,12 +89,14 @@ let () =
   let t = generate () in
   let equation = Sexp.to_string (sexp_of_t t) in
   evil_thing image_data t;
-  (* evil_thing image_data (Xor (X, Y)); *)
-  mirror ~mirror_x:false ~mirror_y:false image_data;
   Ctx2d.put_image_data ctx image_data ~x:0 ~y:0;
-  ignore (body##appendChild (Canvas.dom_element c :> Dom.node Js.t));
+
+  let c2 = Canvas.create ~width:512 ~height:512 in
+  let ctx2 = Canvas.ctx2d c2 in
+  Ctx2d.draw_canvas ~sw:256.0 ~sh:256.0 ~w:512.0 ~h:512.0 ctx2 c ~x:0.0 ~y:0.0;
+  ignore (body##appendChild (Canvas.dom_element c2 :> Dom.node Js.t));
   object%js
-      val c = Canvas.dom_element c
+      val c = Canvas.dom_element c2
       val e = Js.string equation
   end
   )
