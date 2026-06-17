@@ -73,6 +73,7 @@ module Hue_delta = Bound_float (struct
 
 type param =
   { scale : Scale.t
+  ; gradient : [ `linear | `square | `sqrt ]
   ; lightness : Lightness.t
   ; lightness_delta : Lightness_delta.t
   ; chroma : Chroma.t
@@ -86,8 +87,7 @@ let get_start_color' { lightness; chroma; hue; _ } =
   Oklab.Lch.create ~l:lightness ~c:chroma ~h:hue ()
 ;;
 
-let get_end_color'
-  { lightness; lightness_delta; chroma; chroma_delta; hue; hue_delta; scale = _ }
+let get_end_color' { lightness; lightness_delta; chroma; chroma_delta; hue; hue_delta; _ }
   =
   let open Float in
   let l = (lightness + lightness_delta) % 1.0 in
@@ -264,13 +264,20 @@ let tonemap dimension image_data =
   done
 ;;
 
-let color_ramp image_data params =
+let color_ramp image_data params ~gradient =
   let a = params |> get_start_color |> Oklab.Lch.to_lab in
   let b = params |> get_end_color |> Oklab.Lch.to_lab in
   for y = 0 to 511 do
     for x = 0 to 511 do
       let color = Image_data.get_r image_data ~x ~y in
-      let r, g, b = Oklab.to_rgb (Oklab.lerp a b (Float.of_int color /. 255.0)) in
+      let pct = Float.of_int color /. 255.0 in
+      let pct =
+        match gradient with
+        | `linear -> pct
+        | `square -> pct *. pct
+        | `sqrt -> Float.sqrt pct
+      in
+      let r, g, b = Oklab.to_rgb (Oklab.lerp a b pct) in
       Image_data.set image_data ~x ~y ~a:255 ~b ~g ~r
     done
   done
@@ -333,11 +340,17 @@ let () =
          ~x:0.0
          ~y:0.0;
        let image_data = Ctx2d.get_image_data ctx3 in
-       color_ramp image_data params;
+       color_ramp image_data params ~gradient:params.gradient;
        Ctx2d.put_image_data ctx3 image_data ~x:0 ~y:0;
+       let gradient_str =
+         params.gradient |> [%sexp_of: [ `linear | `square | `sqrt ]] |> Sexp.to_string
+       in
        object%js
          val c = Canvas.dom_element c2
          val colored = Canvas.dom_element c3
-         val e = Js.string (equation ^ sprintf "\nScale: %d" params.scale)
+
+         val e =
+           Js.string
+             (equation ^ sprintf "\nScale: %d\nGradient: %s" params.scale gradient_str)
        end)
 ;;
