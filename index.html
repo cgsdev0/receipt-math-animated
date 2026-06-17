@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <title>receipt-math (OCaml + Core via js_of_ocaml)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 
 html {
   margin-top: 32px;
   margin-bottom: 32px;
 }
-canvas {
+canvas, img {
   image-rendering: pixelated;
   border: 1px solid black;
   box-sizing: border-box;
@@ -65,24 +66,47 @@ canvas {
   }
   setupLoginSection();
   const p = window.location.hash === "#debug" ? ["X"] : [];
-  for (let i = 0; i < 50; ++i) {
-    const { c, e, colored } = foo(p[i]);
-    const div = document.createElement('div');
-    const magic = document.createElement('div');
-    magic.classList.add("magic");
-    const code = document.createElement('pre');
-    code.innerText = e;
+  const BATCH_SIZE = 5;
+  const THRESHOLD = 0.7;
 
-    magic.addEventListener('click', ev => {
-      sendCanvasToPrinter(c, e);
+  async function generateBatch() {
+    console.log("new batch");
+    var observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) {
+        if (observer.magicConsumed) return;
+        Object.assign(observer, { magicConsumed: true });
+        generateBatch();
+      }
     });
-    div.appendChild(code);
-    magic.appendChild(c);
-    magic.appendChild(colored);
-    div.appendChild(magic);
-    content.appendChild(div);
-    await nextFrame();
+
+    const scroll_triggers = [];
+    for (let i = 0; i < BATCH_SIZE; ++i) {
+      const { c, e, colored } = foo(p[i]);
+      const div = document.createElement('div');
+      const magic = document.createElement('div');
+      magic.classList.add("magic");
+      const code = document.createElement('pre');
+      code.innerText = e;
+
+      magic.addEventListener('click', ev => {
+        sendCanvasToPrinter(c, e);
+      });
+      const img = document.createElement('img');
+      img.src = colored.toDataURL('image/png');
+      div.appendChild(code);
+      magic.appendChild(c);
+      magic.appendChild(colored);
+      if (i >= Math.floor(BATCH_SIZE * THRESHOLD)) {
+        scroll_triggers.push(magic);
+      }
+      div.appendChild(magic);
+      content.appendChild(div);
+      colored.replaceWith(img);
+      await nextFrame();
+    }
+    scroll_triggers.forEach(trigger => observer.observe(trigger));
   }
+  generateBatch();
 </script>
 </body>
 </html>

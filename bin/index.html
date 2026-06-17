@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <title>receipt-math (OCaml + Core via js_of_ocaml)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 
 html {
   margin-top: 32px;
   margin-bottom: 32px;
 }
-canvas {
+canvas, img {
   image-rendering: pixelated;
   border: 1px solid black;
   box-sizing: border-box;
@@ -65,10 +66,11 @@ canvas {
   }
   setupLoginSection();
   const p = window.location.hash === "#debug" ? ["X"] : [];
-  const BATCH_SIZE = 10;
-  const THRESHOLD = 0.8;
+  const BATCH_SIZE = 5;
+  const THRESHOLD = 0.7;
 
-  function generateBatch() {
+  async function generateBatch() {
+    console.log("new batch");
     var observer = new IntersectionObserver(entries => {
       if (entries.some(entry => entry.isIntersecting)) {
         if (observer.magicConsumed) return;
@@ -89,18 +91,22 @@ canvas {
       magic.addEventListener('click', ev => {
         sendCanvasToPrinter(c, e);
       });
+      const img = document.createElement('img');
+      img.src = colored.toDataURL('image/png');
       div.appendChild(code);
       magic.appendChild(c);
       magic.appendChild(colored);
-      if (i >= math.floor(BATCH_SIZE * THRESHOLD)) {
+      if (i >= Math.floor(BATCH_SIZE * THRESHOLD)) {
         scroll_triggers.push(magic);
       }
       div.appendChild(magic);
       content.appendChild(div);
+      colored.replaceWith(img);
       await nextFrame();
     }
     scroll_triggers.forEach(trigger => observer.observe(trigger));
   }
+  generateBatch();
 </script>
 </body>
 </html>
