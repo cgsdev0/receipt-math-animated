@@ -4,6 +4,11 @@
   <meta charset="utf-8">
   <title>receipt-math (OCaml + Core via js_of_ocaml)</title>
 <style>
+
+html {
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
 canvas {
   image-rendering: pixelated;
   border: 1px solid black;
@@ -35,9 +40,9 @@ canvas {
 }
 
 #content {
-  max-width: 512px;
   display: flex;
   flex-direction: column;
+  max-width: 512px;
   gap: 64px;
   margin-top: 32px;
 }
@@ -67,7 +72,7 @@ canvas {
     const code = document.createElement('pre');
     code.innerText = e;
 
-    c.addEventListener('click', ev => {
+    magic.addEventListener('click', ev => {
       sendCanvasToPrinter(c, e);
     });
     div.appendChild(code);
