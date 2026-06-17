@@ -41,90 +41,79 @@ let rec eval ~x ~y p t =
   | MirrorY a -> eval ~y ~x:(Int.abs (Int.abs ((scaled / 2) - x) - 1)) p a
 ;;
 
-(* Fold a node whose children are both constants into a single constant by
-   evaluating it. The coordinates and scale are irrelevant here: [const_fold]
-   is only ever called on the arithmetic/bitwise nodes (never mirrors), none of
-   which depend on [x]/[y]/[p]. Folding through [eval] guarantees the result
-   matches [eval] exactly, including its modular arithmetic. *)
+(* Fold a node whose children are both constants into a single constant by evaluating it.
+   The coordinates and scale are irrelevant here: [const_fold] is only ever called on the
+   arithmetic/bitwise nodes (never mirrors), none of which depend on [x]/[y]/[p]. Folding
+   through [eval] guarantees the result matches [eval] exactly, including its modular
+   arithmetic. *)
 let const_fold t = C (eval ~x:0 ~y:0 0 t)
 
-let rec simplify t =
+(* Simplify a single node, assuming its children are already simplified. This step is
+   non-recursive: it never calls [simplify] on subtrees, it only inspects the
+   (already-simplified) immediate children to fold constants and apply algebraic
+   identities. *)
+let simplify_node t =
   match t with
   | X | Y -> t
-  | C t -> C (t % 256)
-  | Sub (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C _, C _ -> const_fold (Sub (a, b))
-     | _, C 0 -> a
-     | _ when equal a b -> C 0
-     | _ -> Sub (a, b))
-  | Add (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C _, C _ -> const_fold (Add (a, b))
-     | C 0, _ -> b
-     | _, C 0 -> a
-     | _ -> Add (a, b))
-  | Mod (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C _, C _ -> const_fold (Mod (a, b))
-     | _, C 0 -> a
-     | C 0, _ -> C 0
-     | _ when equal a b -> C 0
-     | _ -> Mod (a, b))
-  | Mul (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C _, C _ -> const_fold (Mul (a, b))
-     | C 0, _ | _, C 0 -> C 0
-     | x, C 1 | C 1, x -> x
-     | _ -> Mul (a, b))
-  | Xor (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C _, C _ -> const_fold (Xor (a, b))
-     | _ when equal a b -> C 0
-     | _ -> Xor (a, b))
-  | And (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C _, C _ -> const_fold (And (a, b))
-     | C 0, _ -> C 0
-     | _, C 0 -> C 0
-     | _ when equal a b -> a
-     | _ -> And (a, b))
-  | Or (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C _, C _ -> const_fold (Or (a, b))
-     | C 0, _ -> b
-     | _, C 0 -> a
-     | _ when equal a b -> a
-     | _ -> Or (a, b))
-  | MirrorX a ->
-    let a = simplify a in
-    (match a with
-     (* [MirrorX] only changes the [y] coordinate, so anything that does not
-        depend on [y] passes through unchanged. Double-mirror is *not* an
-        identity: [eval]'s reflection is not an involution. *)
-     | C _ -> a
-     | X -> a
-     | _ -> MirrorX a)
-  | MirrorY a ->
-    let a = simplify a in
-    (match a with
-     | C _ -> a
-     | Y -> a
-     | _ -> MirrorY a)
+  | C n -> C (n % 256)
+  (* subtraction *)
+  | Sub (C _, C _) -> const_fold t
+  | Sub (a, C 0) -> a
+  | Sub (a, b) when equal a b -> C 0
+  (* addition *)
+  | Add (C _, C _) -> const_fold t
+  | Add (C 0, b) -> b
+  | Add (a, C 0) -> a
+  (* modulo *)
+  | Mod (C _, C _) -> const_fold t
+  | Mod (a, C 0) -> a
+  | Mod (C 0, _) -> C 0
+  | Mod (a, b) when equal a b -> C 0
+  (* multiplication *)
+  | Mul (C _, C _) -> const_fold t
+  | Mul (C 0, _) | Mul (_, C 0) -> C 0
+  | Mul (x, C 1) | Mul (C 1, x) -> x
+  (* exclusive or *)
+  | Xor (C _, C _) -> const_fold t
+  | Xor (a, b) when equal a b -> C 0
+  (* and *)
+  | And (C _, C _) -> const_fold t
+  | And (C 0, _) | And (_, C 0) -> C 0
+  | And (a, b) when equal a b -> a
+  (* or *)
+  | Or (C _, C _) -> const_fold t
+  | Or (C 0, b) -> b
+  | Or (a, C 0) -> a
+  | Or (a, b) when equal a b -> a
+  (* mirrors *)
+  (* [MirrorX] only changes the [y] coordinate, so anything that does not depend on [y]
+     passes through unchanged. Double-mirror is *not* an identity: [eval]'s reflection is
+     not an involution. *)
+  | MirrorX (C _ as a) -> a
+  | MirrorX X -> X
+  | MirrorY (C _ as a) -> a
+  | MirrorY Y -> Y
+  (* fallthrough *)
+  | t -> t
+;;
+
+(* Recursively simplify [t] bottom-up: first simplify every child, then simplify the node
+   itself with [simplify_node]. *)
+let rec simplify t =
+  let t =
+    match t with
+    | X | Y | C _ -> t
+    | Xor (a, b) -> Xor (simplify a, simplify b)
+    | And (a, b) -> And (simplify a, simplify b)
+    | Or (a, b) -> Or (simplify a, simplify b)
+    | Add (a, b) -> Add (simplify a, simplify b)
+    | Sub (a, b) -> Sub (simplify a, simplify b)
+    | Mul (a, b) -> Mul (simplify a, simplify b)
+    | Mod (a, b) -> Mod (simplify a, simplify b)
+    | MirrorX a -> MirrorX (simplify a)
+    | MirrorY a -> MirrorY (simplify a)
+  in
+  simplify_node t
 ;;
 
 let rec stats t =
