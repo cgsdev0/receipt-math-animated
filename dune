@@ -1,17 +1,11 @@
-(executable
- (name receipt_math)
- (modes js)
- (libraries core js_of_ocaml)
- (js_of_ocaml
-  (flags --effects=cps))
- (preprocess
-  (pps ppx_jane js_of_ocaml-ppx)))
-
 ; Copy the compiled JS out to a stable name next to index.html.
 
 (rule
- (target receipt_math.js)
- (deps receipt_math.bc.js)
+ (targets receipt_math.js index.html)
+ (deps bin/main.js bin/main.bc.js bin/index.html)
  (mode promote)
  (action
-  (bash "cat receipt_math.bc.js | grep -v buildInfo > receipt_math.js")))
+  (progn
+   (copy bin/index.html index.html)
+   (copy bin/main.js main.js)
+   (bash "cat bin/main.bc.js | grep -v buildInfo > receipt_math.js"))))

@@ -1,0 +1,8 @@
+(executable
+ (name main)
+ (modes js)
+ (libraries core js_of_ocaml receipt_math)
+ (js_of_ocaml
+  (flags --effects=cps))
+ (preprocess
+  (pps ppx_jane js_of_ocaml-ppx)))

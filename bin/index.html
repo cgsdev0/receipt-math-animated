@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>receipt-math (OCaml + Core via js_of_ocaml)</title>
+<style>
+
+html {
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+canvas {
+  image-rendering: pixelated;
+  border: 1px solid black;
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.magic {
+  width: 512px;
+  height: 512px;
+  position: relative;
+  transform: translate3d(0, 0, 0);
+  cursor: pointer;
+}
+.magic > *:nth-child(2) {
+  opacity: 1.0;
+  transition: opacity 1.0s;
+}
+
+.magic:hover > *:nth-child(2) {
+  opacity: 0.0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+#content {
+  display: flex;
+  flex-direction: column;
+  max-width: 512px;
+  gap: 64px;
+  margin-top: 32px;
+}
+  body {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+  <div id="loginDiv"></div>
+  <div id="content"></div>
+<script src="main.js"></script>
+<script src="receipt_math.js"></script>
+<script type="module">
+  function nextFrame() {
+    return new Promise(requestAnimationFrame);
+  }
+  setupLoginSection();
+  const p = window.location.hash === "#debug" ? ["X"] : [];
+  for (let i = 0; i < 50; ++i) {
+    const { c, e, colored } = foo(p[i]);
+    const div = document.createElement('div');
+    const magic = document.createElement('div');
+    magic.classList.add("magic");
+    const code = document.createElement('pre');
+    code.innerText = e;
+
+    magic.addEventListener('click', ev => {
+      sendCanvasToPrinter(c, e);
+    });
+    div.appendChild(code);
+    magic.appendChild(c);
+    magic.appendChild(colored);
+    div.appendChild(magic);
+    content.appendChild(div);
+    await nextFrame();
+  }
+</script>
+</body>
+</html>
