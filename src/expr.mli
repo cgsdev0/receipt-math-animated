@@ -15,7 +15,11 @@ type t =
   | Mod of t * t
 [@@deriving quickcheck, sexp]
 
-val simplify : t -> t
-val stats : t -> int * bool * bool
+val generate : unit -> t
 val dimension : int
 val eval : x:int -> y:int -> int -> t -> int
+
+module For_testing : sig
+  val simplify : t -> t
+  val stats : t -> int * bool * bool
+end

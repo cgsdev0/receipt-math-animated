@@ -146,3 +146,17 @@ let rec stats t =
     let size, x, y = stats a in
     size + 1, x, y
 ;;
+
+let rec generate () =
+  let t =
+    simplify
+      (Quickcheck.random_value ~size:4 ~seed:`Nondeterministic quickcheck_generator)
+  in
+  let size, x, y = stats t in
+  if size > 5 && x && y then t else generate ()
+;;
+
+module For_testing = struct
+  let simplify = simplify
+  let stats = stats
+end

@@ -67,28 +67,13 @@ let main () =
        let c = Canvas.create ~width:Expr.dimension ~height:Expr.dimension in
        let ctx = Canvas.ctx2d c in
        let image_data = Ctx2d.get_image_data ctx in
-       (* let t = MirrorY (MirrorX (Xor (Mul(X, C(2)), Y))) in *)
-       (* let () = Quickcheck.random_value in *)
-       let rec generate () =
-         let t =
-           Expr.simplify
-             (Quickcheck.random_value
-                ~size:4
-                ~seed:`Nondeterministic
-                Expr.quickcheck_generator)
-         in
-         let size, x, y = Expr.stats t in
-         if size > 5 && x && y then t else generate ()
-       in
        let t =
          match Js.Optdef.to_option program with
-         | None -> generate ()
+         | None -> Expr.generate ()
          | Some s -> s |> Js.to_string |> Sexp.of_string |> [%of_sexp: Expr.t]
        in
        let equation = Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr.t] t) in
-       let params =
-         Quickcheck.random_value ~seed:`Nondeterministic Param.quickcheck_generator
-       in
+       let params = Param.random () in
        evil_thing params image_data t;
        let scaled = Expr.dimension / Int.pow 2 (Param.scale params) in
        tonemap scaled image_data;

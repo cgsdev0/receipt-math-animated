@@ -64,6 +64,7 @@ type t =
   }
 [@@deriving quickcheck, sexp_of, equal]
 
+let random () = Quickcheck.random_value ~seed:`Nondeterministic quickcheck_generator
 let scale { scale; _ } = scale
 let gradient { gradient; _ } = gradient
 

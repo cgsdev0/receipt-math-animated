@@ -1,7 +1,8 @@
 open! Core
 
-type t [@@deriving quickcheck, sexp_of, equal]
+type t [@@deriving sexp_of, equal]
 
+val random : unit -> t
 val scale : t -> int
 val gradient : t -> [ `linear | `square | `sqrt | `sin | `cos ]
 val get_start_color : t -> Oklab.t

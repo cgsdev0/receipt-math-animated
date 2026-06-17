@@ -7,7 +7,7 @@ module Expr = Receipt_math.Expr
    them or display them. *)
 let eval_direct_and_simplified t ~x ~y ~p =
   let direct = Expr.eval ~x ~y p t in
-  let simplified = Expr.eval ~x ~y p (Expr.simplify t) in
+  let simplified = Expr.eval ~x ~y p (Expr.For_testing.simplify t) in
   direct, simplified
 ;;
 
@@ -21,9 +21,9 @@ let%expect_test "mod by zero is preserved" =
 ;;
 
 (* [eval]'s reflection [abs (abs (scaled/2 - y) - 1)] is not an involution, so
-   [MirrorX (MirrorX a)] is NOT [a]. At y=128, scaled=256: f(128)=1, f(1)=126,
-   so a [y]-dependent body evaluates at 126, not 128. [simplify] used to cancel
-   the double mirror and produce 128. *)
+   [MirrorX (MirrorX a)] is NOT [a]. At y=128, scaled=256: f(128)=1, f(1)=126, so a
+   [y]-dependent body evaluates at 126, not 128. [simplify] used to cancel the double
+   mirror and produce 128. *)
 let%expect_test "double mirror is not cancelled" =
   let t = Expr.(MirrorX (MirrorX Y)) in
   let direct, simplified = eval_direct_and_simplified t ~x:0 ~y:128 ~p:0 in
@@ -31,10 +31,10 @@ let%expect_test "double mirror is not cancelled" =
   [%expect {| direct=126 simplified=126 |}]
 ;;
 
-(* Documents that the [const_fold] change was behavior-preserving, not a bug
-   fix: [eval] reduces leaf [C]s mod 256 before combining, and [simplify] also
-   normalizes constants first (via [C t -> C (t % 256)]) before folding, so the
-   two already agreed. (Core's [%] is euclidean, so 0 - 1 = 255 mod 256.) *)
+(* Documents that the [const_fold] change was behavior-preserving, not a bug fix: [eval]
+   reduces leaf [C]s mod 256 before combining, and [simplify] also normalizes constants
+   first (via [C t -> C (t % 256)]) before folding, so the two already agreed. (Core's [%]
+   is euclidean, so 0 - 1 = 255 mod 256.) *)
 let%expect_test "constant folding matches eval" =
   let t = Expr.(Sub (C 256, C 1)) in
   let direct, simplified = eval_direct_and_simplified t ~x:0 ~y:0 ~p:0 in
@@ -42,9 +42,9 @@ let%expect_test "constant folding matches eval" =
   [%expect {| direct=255 simplified=255 |}]
 ;;
 
-(* The new algebraic identities each fire and reduce the expression. Correctness
-   (that they preserve [eval]) is covered by the property test below. *)
-let show t = print_s [%sexp (Expr.simplify t : Expr.t)]
+(* The new algebraic identities each fire and reduce the expression. Correctness (that
+   they preserve [eval]) is covered by the property test below. *)
+let show t = print_s [%sexp (Expr.For_testing.simplify t : Expr.t)]
 
 let%expect_test "xor with zero" =
   show Expr.(Xor (X, C 0));
