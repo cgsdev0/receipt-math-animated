@@ -2,6 +2,8 @@ open Core
 open Canvas2d
 open Js_of_ocaml
 
+let dimension = 256
+
 type t =
   | X
   | C of int
@@ -20,6 +22,11 @@ type t =
 module type Bounds = sig
   val low : float
   val high : float
+end
+
+module Scale = struct
+  include Int
+  let quickcheck_generator = Base_quickcheck.Generator.int_inclusive 0 2
 end
 
 module Bound_float (B : Bounds) = struct
@@ -64,7 +71,8 @@ module Hue_delta = Bound_float (struct
   end)
 
 type param =
-  { lightness : Lightness.t
+  { scale : Scale.t
+  ; lightness : Lightness.t
   ; lightness_delta : Lightness_delta.t
   ; chroma : Chroma.t
   ; chroma_delta : Chroma_delta.t
@@ -88,14 +96,13 @@ let get_end_color' { lightness; lightness_delta; chroma; chroma_delta; hue; hue_
 let get_start_color params =
   let a = get_start_color' params in
   let b = get_end_color' params in
-  if Float.(Oklab.Lch.lightness a > Oklab.Lch.lightness b)  then
-    b else a
+  if Float.(Oklab.Lch.lightness a > Oklab.Lch.lightness b) then b else a
 ;;
+
 let get_end_color params =
   let a = get_start_color' params in
   let b = get_end_color' params in
-  if Float.(Oklab.Lch.lightness a > Oklab.Lch.lightness b)  then
-    a else b
+  if Float.(Oklab.Lch.lightness a > Oklab.Lch.lightness b) then a else b
 ;;
 
 let rec simplify t =
@@ -175,6 +182,10 @@ let rec simplify t =
      | _ -> MirrorY a)
 ;;
 
+let rec pow base exp =
+  if exp = 0 then 1
+  else base * pow base (exp - 1)
+
 (* TODO: generate this thing *)
 let rec stats t =
   match t with
@@ -191,33 +202,35 @@ let rec stats t =
     size + 1, x, y
 ;;
 
-let rec eval ~x ~y t =
+let rec eval ~x ~y p t =
+  let scaled = dimension / (pow 2 p.scale) in
   match t with
   | X -> x
   | Y -> y
   | C c -> c % 256
-  | Xor (a, b) -> eval ~x ~y a lxor eval ~x ~y b
-  | Or (a, b) -> eval ~x ~y a lor eval ~x ~y b
-  | And (a, b) -> eval ~x ~y a land eval ~x ~y b
-  | Add (a, b) -> (eval ~x ~y a + eval ~x ~y b) % 256
-  | Sub (a, b) -> (eval ~x ~y a - eval ~x ~y b) % 256
-  | Mul (a, b) -> eval ~x ~y a * eval ~x ~y b % 256
+  | Xor (a, b) -> eval ~x ~y p a lxor eval ~x ~y p b
+  | Or (a, b) -> eval ~x ~y p a lor eval ~x ~y p b
+  | And (a, b) -> eval ~x ~y p a land eval ~x ~y p b
+  | Add (a, b) -> (eval ~x ~y p a + eval ~x ~y p b) % 256
+  | Sub (a, b) -> (eval ~x ~y p a - eval ~x ~y p b) % 256
+  | Mul (a, b) -> eval ~x ~y p a * eval ~x ~y p b % 256
   | Mod (a, b) ->
-    let a = eval ~x ~y a in
-    let b = eval ~x ~y b in
+    let a = eval ~x ~y p a in
+    let b = eval ~x ~y p b in
     (match a, b with
      | _, 0 -> a
      | 0, _ -> 0
      | _ -> a % b)
     % 256
-  | MirrorX a -> eval ~x ~y:(Int.abs (Int.abs (128 - y) - 1)) a
-  | MirrorY a -> eval ~y ~x:(Int.abs (Int.abs (128 - x) - 1)) a
+  | MirrorX a -> eval ~x ~y:(Int.abs (Int.abs (scaled / 2 - y) - 1)) p a
+  | MirrorY a -> eval ~y ~x:(Int.abs (Int.abs (scaled / 2 - x) - 1)) p a
 ;;
 
-let evil_thing image_data t =
-  for y = 0 to 255 do
-    for x = 0 to 255 do
-      let color = eval ~x ~y t in
+let evil_thing params image_data t =
+  let scaled = dimension / (pow 2 params.scale) in
+  for y = 0 to scaled - 1 do
+    for x = 0 to scaled - 1 do
+      let color = eval ~x ~y params t in
       Image_data.set image_data ~x ~y ~g:color ~b:color ~r:color ~a:255
     done
   done
@@ -231,18 +244,18 @@ let remap color min max =
   | _ -> Int.of_float (Float.of_int (color - min) *. ratio)
 ;;
 
-let tonemap image_data =
+let tonemap dimension image_data =
   let min_value = ref 255 in
   let max_value = ref 0 in
-  for y = 0 to 255 do
-    for x = 0 to 255 do
+  for y = 0 to dimension - 1 do
+    for x = 0 to dimension - 1 do
       let color = Image_data.get_r image_data ~x ~y in
       if color < !min_value then min_value := color;
       if color > !max_value then max_value := color
     done
   done;
-  for y = 0 to 255 do
-    for x = 0 to 255 do
+  for y = 0 to dimension - 1 do
+    for x = 0 to dimension - 1 do
       let color = Image_data.get_r image_data ~x ~y in
       let color = remap color !min_value !max_value in
       Image_data.set image_data ~x ~y ~g:color ~b:color ~r:color ~a:255
@@ -264,11 +277,10 @@ let color_ramp image_data params =
 
 let () =
   Js.Unsafe.global##.foo
-  := Js.wrap_callback (fun (program: Js.js_string Js.t Js.Optdef.t) ->
-       let c = Canvas.create ~width:256 ~height:256 in
+  := Js.wrap_callback (fun (program : Js.js_string Js.t Js.Optdef.t) ->
+       let c = Canvas.create ~width:dimension ~height:dimension in
        let ctx = Canvas.ctx2d c in
        let image_data = Ctx2d.get_image_data ctx in
-       evil_thing image_data (And (X, Y));
        (* let t = MirrorY (MirrorX (Xor (Mul(X, C(2)), Y))) in *)
        (* let () = Quickcheck.random_value in *)
        let rec generate () =
@@ -291,23 +303,24 @@ let () =
        let params =
          Quickcheck.random_value ~seed:`Nondeterministic quickcheck_generator_param
        in
-       evil_thing image_data t;
-       tonemap image_data;
+       evil_thing params image_data t;
+      let scaled = dimension / (pow 2 params.scale) in
+       tonemap scaled image_data;
        Ctx2d.put_image_data ctx image_data ~x:0 ~y:0;
        (* Copy 1 - upscaled *)
        let c2 = Canvas.create ~width:512 ~height:512 in
        let ctx2 = Canvas.ctx2d c2 in
-       Ctx2d.draw_canvas ~sw:256.0 ~sh:256.0 ~w:512.0 ~h:512.0 ctx2 c ~x:0.0 ~y:0.0;
+       Ctx2d.draw_canvas ~sw:(Float.of_int scaled) ~sh:(Float.of_int scaled) ~w:512.0 ~h:512.0 ctx2 c ~x:0.0 ~y:0.0;
        (* Copy 2 - colorized *)
        let c3 = Canvas.create ~width:512 ~height:512 in
        let ctx3 = Canvas.ctx2d c3 in
-       Ctx2d.draw_canvas ~sw:256.0 ~sh:256.0 ~w:512.0 ~h:512.0 ctx3 c ~x:0.0 ~y:0.0;
+       Ctx2d.draw_canvas ~sw:(Float.of_int scaled) ~sh:(Float.of_int scaled)  ~w:512.0 ~h:512.0 ctx3 c ~x:0.0 ~y:0.0;
        let image_data = Ctx2d.get_image_data ctx3 in
        color_ramp image_data params;
        Ctx2d.put_image_data ctx3 image_data ~x:0 ~y:0;
        object%js
          val c = Canvas.dom_element c2
          val colored = Canvas.dom_element c3
-         val e = Js.string equation
+         val e = Js.string (equation ^ (sprintf "Scale: %d" params.scale))
        end)
 ;;
