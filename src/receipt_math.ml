@@ -4,10 +4,10 @@ open Js_of_ocaml
 module Expr = Expr
 
 let evil_thing params image_data t =
-  let scaled = Expr.dimension / Int.pow 2 params.Param.scale in
+  let scaled = Expr.dimension / Int.pow 2 (Param.scale params) in
   for y = 0 to scaled - 1 do
     for x = 0 to scaled - 1 do
-      let color = Expr.eval ~x ~y params.scale t in
+      let color = Expr.eval ~x ~y (Param.scale params) t in
       Image_data.set image_data ~x ~y ~g:color ~b:color ~r:color ~a:255
     done
   done
@@ -90,7 +90,7 @@ let main () =
          Quickcheck.random_value ~seed:`Nondeterministic Param.quickcheck_generator
        in
        evil_thing params image_data t;
-       let scaled = Expr.dimension / Int.pow 2 params.scale in
+       let scaled = Expr.dimension / Int.pow 2 (Param.scale params) in
        tonemap scaled image_data;
        Ctx2d.put_image_data ctx image_data ~x:0 ~y:0;
        (* Copy 1 - upscaled *)
@@ -118,10 +118,11 @@ let main () =
          ~x:0.0
          ~y:0.0;
        let image_data = Ctx2d.get_image_data ctx3 in
-       color_ramp image_data params ~gradient:params.gradient;
+       color_ramp image_data params ~gradient:(Param.gradient params);
        Ctx2d.put_image_data ctx3 image_data ~x:0 ~y:0;
        let gradient_str =
-         params.gradient
+         params
+         |> Param.gradient
          |> [%sexp_of: [ `linear | `square | `sqrt | `sin | `cos ]]
          |> Sexp.to_string
        in
@@ -131,6 +132,7 @@ let main () =
 
          val e =
            Js.string
-             (equation ^ sprintf "\nScale: %d\nGradient: %s" params.scale gradient_str)
+             (equation
+              ^ sprintf "\nScale: %d\nGradient: %s" (Param.scale params) gradient_str)
        end)
 ;;

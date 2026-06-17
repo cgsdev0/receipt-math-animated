@@ -64,6 +64,9 @@ type t =
   }
 [@@deriving quickcheck, sexp_of, equal]
 
+let scale { scale; _ } = scale
+let gradient { gradient; _ } = gradient
+
 let get_start_color' { lightness; chroma; hue; _ } =
   Oklab.Lch.create ~l:lightness ~c:chroma ~h:hue ()
 ;;
