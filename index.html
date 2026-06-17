@@ -21,12 +21,12 @@ canvas {
   cursor: pointer;
 }
 .magic > *:nth-child(2) {
-  opacity: 0;
+  opacity: 1.0;
   transition: opacity 1.0s;
 }
 
 .magic:hover > *:nth-child(2) {
-  opacity: 1;
+  opacity: 0.0;
 }
 
 * {
@@ -71,8 +71,8 @@ canvas {
       sendCanvasToPrinter(c, e);
     });
     div.appendChild(code);
-    magic.appendChild(colored);
     magic.appendChild(c);
+    magic.appendChild(colored);
     div.appendChild(magic);
     content.appendChild(div);
     await nextFrame();
