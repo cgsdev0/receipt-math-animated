@@ -2,8 +2,8 @@ open! Core
 
 type t =
   | X
-  | C of int
   | Y
+  | C of int
   | Xor of t * t
   | And of t * t
   | Or of t * t
