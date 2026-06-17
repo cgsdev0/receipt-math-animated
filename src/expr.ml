@@ -15,98 +15,6 @@ type t =
   | Mod of t * t
 [@@deriving quickcheck, sexp, equal]
 
-let rec simplify t =
-  match t with
-  | X | Y -> t
-  | C t -> C (t % 256)
-  | Sub (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C x, C y -> C ((x - y) % 256)
-     | _, C 0 -> a
-     | _ when equal a b -> C 0
-     | _ -> Sub (a, b))
-  | Add (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C x, C y -> C ((x + y) % 256)
-     | C 0, _ -> b
-     | _, C 0 -> a
-     | _ -> Add (a, b))
-  | Mod (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | _, C 0 | C 0, _ -> C 0
-     | C x, C y -> C (x % y)
-     | _ when equal a b -> C 0
-     | _ -> Mod (a, b))
-  | Mul (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C x, C y -> C (x * y % 256)
-     | C 0, _ | _, C 0 -> C 0
-     | x, C 1 | C 1, x -> x
-     | _ -> Mul (a, b))
-  | Xor (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C x, C y -> C (x lxor y % 256)
-     | _ when equal a b -> C 0
-     | _ -> Xor (a, b))
-  | And (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C x, C y -> C (x land y % 256)
-     | C 0, _ -> C 0
-     | _, C 0 -> C 0
-     | _ when equal a b -> a
-     | _ -> And (a, b))
-  | Or (a, b) ->
-    let a = simplify a in
-    let b = simplify b in
-    (match a, b with
-     | C x, C y -> C (x lor y % 256)
-     | C 0, _ -> b
-     | _, C 0 -> a
-     | _ when equal a b -> a
-     | _ -> Or (a, b))
-  | MirrorX a ->
-    let a = simplify a in
-    (match a with
-     | MirrorX a -> a
-     | C _ -> a
-     | X -> a
-     | _ -> MirrorX a)
-  | MirrorY a ->
-    let a = simplify a in
-    (match a with
-     | MirrorY a -> a
-     | C _ -> a
-     | Y -> a
-     | _ -> MirrorY a)
-;;
-
-let rec stats t =
-  match t with
-  | X -> 1, true, false
-  | Y -> 1, false, true
-  | C _ -> 1, false, false
-  | Xor (a, b) | And (a, b) | Or (a, b) | Add (a, b) | Sub (a, b) | Mul (a, b) | Mod (a, b)
-    ->
-    let size_a, x_a, y_a = stats a in
-    let size_b, x_b, y_b = stats b in
-    size_a + size_b + 1, x_a || x_b, y_a || y_b
-  | MirrorX a | MirrorY a ->
-    let size, x, y = stats a in
-    size + 1, x, y
-;;
-
 let dimension = 256
 
 let rec eval ~x ~y p t =
@@ -131,4 +39,105 @@ let rec eval ~x ~y p t =
     % 256
   | MirrorX a -> eval ~x ~y:(Int.abs (Int.abs ((scaled / 2) - y) - 1)) p a
   | MirrorY a -> eval ~y ~x:(Int.abs (Int.abs ((scaled / 2) - x) - 1)) p a
+;;
+
+(* Fold a node whose children are both constants into a single constant by
+   evaluating it. The coordinates and scale are irrelevant here: [const_fold]
+   is only ever called on the arithmetic/bitwise nodes (never mirrors), none of
+   which depend on [x]/[y]/[p]. Folding through [eval] guarantees the result
+   matches [eval] exactly, including its modular arithmetic. *)
+let const_fold t = C (eval ~x:0 ~y:0 0 t)
+
+let rec simplify t =
+  match t with
+  | X | Y -> t
+  | C t -> C (t % 256)
+  | Sub (a, b) ->
+    let a = simplify a in
+    let b = simplify b in
+    (match a, b with
+     | C _, C _ -> const_fold (Sub (a, b))
+     | _, C 0 -> a
+     | _ when equal a b -> C 0
+     | _ -> Sub (a, b))
+  | Add (a, b) ->
+    let a = simplify a in
+    let b = simplify b in
+    (match a, b with
+     | C _, C _ -> const_fold (Add (a, b))
+     | C 0, _ -> b
+     | _, C 0 -> a
+     | _ -> Add (a, b))
+  | Mod (a, b) ->
+    let a = simplify a in
+    let b = simplify b in
+    (match a, b with
+     | C _, C _ -> const_fold (Mod (a, b))
+     | _, C 0 -> a
+     | C 0, _ -> C 0
+     | _ when equal a b -> C 0
+     | _ -> Mod (a, b))
+  | Mul (a, b) ->
+    let a = simplify a in
+    let b = simplify b in
+    (match a, b with
+     | C _, C _ -> const_fold (Mul (a, b))
+     | C 0, _ | _, C 0 -> C 0
+     | x, C 1 | C 1, x -> x
+     | _ -> Mul (a, b))
+  | Xor (a, b) ->
+    let a = simplify a in
+    let b = simplify b in
+    (match a, b with
+     | C _, C _ -> const_fold (Xor (a, b))
+     | _ when equal a b -> C 0
+     | _ -> Xor (a, b))
+  | And (a, b) ->
+    let a = simplify a in
+    let b = simplify b in
+    (match a, b with
+     | C _, C _ -> const_fold (And (a, b))
+     | C 0, _ -> C 0
+     | _, C 0 -> C 0
+     | _ when equal a b -> a
+     | _ -> And (a, b))
+  | Or (a, b) ->
+    let a = simplify a in
+    let b = simplify b in
+    (match a, b with
+     | C _, C _ -> const_fold (Or (a, b))
+     | C 0, _ -> b
+     | _, C 0 -> a
+     | _ when equal a b -> a
+     | _ -> Or (a, b))
+  | MirrorX a ->
+    let a = simplify a in
+    (match a with
+     (* [MirrorX] only changes the [y] coordinate, so anything that does not
+        depend on [y] passes through unchanged. Double-mirror is *not* an
+        identity: [eval]'s reflection is not an involution. *)
+     | C _ -> a
+     | X -> a
+     | _ -> MirrorX a)
+  | MirrorY a ->
+    let a = simplify a in
+    (match a with
+     | C _ -> a
+     | Y -> a
+     | _ -> MirrorY a)
+;;
+
+let rec stats t =
+  match t with
+  | X -> 1, true, false
+  | Y -> 1, false, true
+  | C _ -> 1, false, false
+  | Xor (a, b) | And (a, b) | Or (a, b) | Add (a, b) | Sub (a, b) | Mul (a, b) | Mod (a, b)
+    ->
+    let size_a, x_a, y_a = stats a in
+    let size_b, x_b, y_b = stats b in
+    size_a + size_b + 1, x_a || x_b, y_a || y_b
+  | MirrorX a | MirrorY a ->
+    let size, x, y = stats a in
+    size + 1, x, y
 ;;
