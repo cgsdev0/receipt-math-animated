@@ -208,6 +208,7 @@ let to_rgb (t : t) =
   in
   r, g, b
 ;;
+
 let to_string_hex (t : t) =
   let { Rgba.r; g; b; alpha } = t |> Oklab.to_rgba_linear |> Rgba_linear.to_rgba in
   let r, g, b, a =
