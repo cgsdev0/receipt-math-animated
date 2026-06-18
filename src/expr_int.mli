@@ -1,6 +1,7 @@
 open! Core
 
 type t =
+  | T
   | X
   | Y
   | C of int
@@ -17,9 +18,9 @@ type t =
 
 val generate : unit -> t
 val dimension : int
-val eval : x:int -> y:int -> int -> t -> int
+val eval : x:int -> y:int -> time:float -> int -> t -> int
 
 module For_testing : sig
   val simplify : t -> t
-  val stats : t -> int * bool * bool
+  val stats : t -> int * bool * bool * bool
 end

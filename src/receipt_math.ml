@@ -26,14 +26,14 @@ let output_dimension = 512
      directly at the full [output_dimension], one sample per displayed pixel -- there is no
      low-resolution intermediate and therefore nothing to upsample (its [`bilinear] filter is
      an identity at this resolution). *)
-let render params t =
+let render params t time =
   match t with
   | Int t ->
     let p = Param.scale params in
     let size = Expr_int.dimension / Int.pow 2 p in
     let grid =
       Array.init (size * size) ~f:(fun i ->
-        Float.of_int (Expr_int.eval ~x:(i % size) ~y:(i / size) p t) /. 255.)
+        Float.of_int (Expr_int.eval ~x:(i % size) ~y:(i / size) ~time p t) /. 255.)
     in
     grid, size, `nearest
   | Float t ->
@@ -43,7 +43,7 @@ let render params t =
       Array.init (size * size) ~f:(fun i ->
         let fx = Float.of_int (i % size) /. denom in
         let fy = Float.of_int (i / size) /. denom in
-        Expr_float.eval ~x:fx ~y:fy t)
+        Expr_float.eval ~x:fx ~y:fy ~time t)
     in
     grid, size, `bilinear
 ;;
@@ -127,8 +127,9 @@ let to_greyscale image_data grid ~size ~out ~filter =
 ;;
 
 let main () =
-  Js.Unsafe.global##.foo
-  := Js.wrap_callback (fun (program : Js.js_string Js.t Js.Optdef.t) ->
+  Js.Unsafe.global##.genProgram
+  := Js.wrap_callback (fun
+    (program : Js.js_string Js.t Js.Optdef.t) ->
        let params = Param.random () in
        let t =
          match Js.Optdef.to_option program with
@@ -147,34 +148,23 @@ let main () =
          | Int t -> Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr_int.t] t)
          | Float t -> Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr_float.t] t)
        in
-       let grid, size, filter = render params t in
-       let grid = tonemap grid in
-       let out = output_dimension in
-       (* Copy 1 - greyscale preview *)
-       let c2 = Canvas.create ~width:out ~height:out in
-       let ctx2 = Canvas.ctx2d c2 in
-       let image_data = Ctx2d.get_image_data ctx2 in
-       to_greyscale image_data grid ~size ~out ~filter;
-       Ctx2d.put_image_data ctx2 image_data ~x:0 ~y:0;
-       (* Copy 2 - colorized *)
-       let c3 = Canvas.create ~width:out ~height:out in
-       let ctx3 = Canvas.ctx2d c3 in
-       let image_data = Ctx2d.get_image_data ctx3 in
-       color_ramp image_data params grid ~size ~out ~filter ~gradient:(Param.gradient params);
-       Ctx2d.put_image_data ctx3 image_data ~x:0 ~y:0;
+       let numeric_str =
+         params |> Param.numeric |> [%sexp_of: [ `int | `float ]] |> Sexp.to_string
+       in
        let gradient_str =
          params
          |> Param.gradient
          |> [%sexp_of: [ `linear | `square | `sqrt | `sin | `cos ]]
          |> Sexp.to_string
        in
-       let numeric_str =
-         params |> Param.numeric |> [%sexp_of: [ `int | `float ]] |> Sexp.to_string
-       in
+       let out = output_dimension in
+       let c2 = Canvas.create ~width:out ~height:out in
+       let c3 = Canvas.create ~width:out ~height:out in
        object%js
-         val c = Canvas.dom_element c2
-         val colored = Canvas.dom_element c3
-
+         val params = Js.Unsafe.inject params
+         val t = Js.Unsafe.inject t
+         val c2 = Js.Unsafe.inject c2
+         val c3 = Js.Unsafe.inject c3
          val e =
            Js.string
              (equation
@@ -183,5 +173,32 @@ let main () =
                   (Param.scale params)
                   numeric_str
                   gradient_str)
-       end)
+       end);
+  Js.Unsafe.global##.foo
+  := Js.wrap_callback (fun
+    (timestamp : float)
+    (
+      handle : < params : Param.t Js.readonly_prop;
+      c2 : Canvas.t Js.readonly_prop Js.t;
+      c3 : Canvas.t Js.readonly_prop Js.t;
+      t : expr Js.readonly_prop > Js.t
+    ) ->
+      let params : Param.t = Obj.magic handle##.params in
+      let c2 : Canvas.t = Obj.magic (Js.Unsafe.get handle (Js.string "c2")) in
+      let c3 : Canvas.t = Obj.magic (Js.Unsafe.get handle (Js.string "c3")) in
+      let out = output_dimension in
+      let t : expr = Obj.magic handle##.t in
+       let grid, size, filter = render params t timestamp in
+       let grid = tonemap grid in
+       (* Copy 1 - greyscale preview *)
+       let ctx2 = Canvas.ctx2d ~will_read_frequently:true c2 in
+       let image_data = Ctx2d.get_image_data ctx2 in
+       to_greyscale image_data grid ~size ~out ~filter;
+       Ctx2d.put_image_data ctx2 image_data ~x:0 ~y:0;
+       (* Copy 2 - colorized *)
+       let ctx3 = Canvas.ctx2d ~will_read_frequently:true c3 in
+       let image_data = Ctx2d.get_image_data ctx3 in
+       color_ramp image_data params grid ~size ~out ~filter ~gradient:(Param.gradient params);
+       Ctx2d.put_image_data ctx3 image_data ~x:0 ~y:0;
+      )
 ;;

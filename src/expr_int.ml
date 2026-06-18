@@ -1,6 +1,7 @@
 open! Core
 
 type t =
+  | T
   | X
   | Y
   | C of int
@@ -17,28 +18,29 @@ type t =
 
 let dimension = 256
 
-let rec eval ~x ~y p t =
+let rec eval ~x ~y ~time p t =
   let scaled = dimension / Int.pow 2 p in
   match t with
+  | T -> Int.of_float (time *. 60.0)
   | X -> x
   | Y -> y
   | C c -> c % 256
-  | Xor (a, b) -> eval ~x ~y p a lxor eval ~x ~y p b
-  | Or (a, b) -> eval ~x ~y p a lor eval ~x ~y p b
-  | And (a, b) -> eval ~x ~y p a land eval ~x ~y p b
-  | Add (a, b) -> (eval ~x ~y p a + eval ~x ~y p b) % 256
-  | Sub (a, b) -> (eval ~x ~y p a - eval ~x ~y p b) % 256
-  | Mul (a, b) -> eval ~x ~y p a * eval ~x ~y p b % 256
+  | Xor (a, b) -> eval ~x ~y ~time p a lxor eval ~x ~y ~time p b
+  | Or (a, b) -> eval ~x ~y ~time p a lor eval ~x ~y ~time p b
+  | And (a, b) -> eval ~x ~y ~time p a land eval ~x ~y ~time p b
+  | Add (a, b) -> (eval ~x ~y ~time p a + eval ~x ~y ~time p b) % 256
+  | Sub (a, b) -> (eval ~x ~y ~time p a - eval ~x ~y ~time p b) % 256
+  | Mul (a, b) -> eval ~x ~y ~time p a * eval ~x ~y ~time p b % 256
   | Mod (a, b) ->
-    let a = eval ~x ~y p a in
-    let b = eval ~x ~y p b in
+    let a = eval ~x ~y ~time p a in
+    let b = eval ~x ~y ~time p b in
     (match a, b with
      | _, 0 -> a
      | 0, _ -> 0
      | _ -> a % b)
     % 256
-  | MirrorX a -> eval ~x ~y:(Int.abs (Int.abs ((scaled / 2) - y) - 1)) p a
-  | MirrorY a -> eval ~y ~x:(Int.abs (Int.abs ((scaled / 2) - x) - 1)) p a
+  | MirrorX a -> eval ~x ~y:(Int.abs (Int.abs ((scaled / 2) - y) - 1)) ~time p a
+  | MirrorY a -> eval ~y ~x:(Int.abs (Int.abs ((scaled / 2) - x) - 1)) ~time p a
 ;;
 
 (* Fold a node whose children are both constants into a single constant by evaluating it.
@@ -46,7 +48,7 @@ let rec eval ~x ~y p t =
    arithmetic/bitwise nodes (never mirrors), none of which depend on [x]/[y]/[p]. Folding
    through [eval] guarantees the result matches [eval] exactly, including its modular
    arithmetic. *)
-let const_fold t = C (eval ~x:0 ~y:0 0 t)
+let const_fold t = C (eval ~x:0 ~y:0 ~time:0.0 0 t)
 
 (* Simplify a single node, assuming its children are already simplified. This step is
    non-recursive: it never calls [simplify] on subtrees, it only inspects the
@@ -54,7 +56,7 @@ let const_fold t = C (eval ~x:0 ~y:0 0 t)
    identities. *)
 let simplify_node t =
   match t with
-  | X | Y -> t
+  | X | Y | T -> t
   | C n -> C (n % 256)
   (* subtraction *)
   | Sub (C _, C _) -> const_fold t
@@ -118,7 +120,7 @@ let simplify_node t =
 let rec simplify t =
   let t =
     match t with
-    | X | Y | C _ -> t
+    | X | Y | C _ | T -> t
     | Xor (a, b) -> Xor (simplify a, simplify b)
     | And (a, b) -> And (simplify a, simplify b)
     | Or (a, b) -> Or (simplify a, simplify b)
@@ -134,17 +136,18 @@ let rec simplify t =
 
 let rec stats t =
   match t with
-  | X -> 1, true, false
-  | Y -> 1, false, true
-  | C _ -> 1, false, false
+  | T -> 1, false, false, true
+  | X -> 1, true, false, false
+  | Y -> 1, false, true, false
+  | C _ -> 1, false, false, false
   | Xor (a, b) | And (a, b) | Or (a, b) | Add (a, b) | Sub (a, b) | Mul (a, b) | Mod (a, b)
     ->
-    let size_a, x_a, y_a = stats a in
-    let size_b, x_b, y_b = stats b in
-    size_a + size_b + 1, x_a || x_b, y_a || y_b
+    let size_a, x_a, y_a, t_a = stats a in
+    let size_b, x_b, y_b, t_b = stats b in
+    size_a + size_b + 1, x_a || x_b, y_a || y_b, t_a || t_b
   | MirrorX a | MirrorY a ->
-    let size, x, y = stats a in
-    size + 1, x, y
+    let size, x, y, t = stats a in
+    size + 1, x, y, t
 ;;
 
 let rec generate () =
@@ -152,8 +155,8 @@ let rec generate () =
     simplify
       (Quickcheck.random_value ~size:4 ~seed:`Nondeterministic quickcheck_generator)
   in
-  let size, x, y = stats t in
-  if size > 5 && x && y then t else generate ()
+  let size, x, y, time  = stats t in
+  if size > 5 && x && y && time then t else generate ()
 ;;
 
 module For_testing = struct

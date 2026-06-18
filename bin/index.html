@@ -72,7 +72,7 @@ img, canvas {
   }
   setupLoginSection();
   const p = window.location.hash === "#debug" ? ["X"] : [];
-  const BATCH_SIZE = 5;
+  const BATCH_SIZE = 1;
   const THRESHOLD = 0.7;
 
   function formatText(str) {
@@ -82,42 +82,29 @@ img, canvas {
     });
   }
 
-  async function generateBatch() {
-    var observer = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) {
-        observer.disconnect();
-        generateBatch();
-      }
-    });
-
-    const scroll_triggers = [];
-    for (let i = 0; i < BATCH_SIZE; ++i) {
-      const { c, e, colored } = foo(p[i]);
-      const text = formatText(e);
-      const div = document.createElement('div');
-      const magic = document.createElement('div');
-      magic.classList.add("magic");
-      const code = document.createElement('pre');
-      code.innerText = text;
-
-      magic.addEventListener('click', ev => {
-        sendCanvasToPrinter(c, text);
-      });
-      const img_color = document.createElement('img');
-      img_color.src = colored.toDataURL('image/png');
-      div.appendChild(code);
-      magic.appendChild(c);
-      magic.appendChild(img_color);
-      if (i >= Math.floor(BATCH_SIZE * THRESHOLD)) {
-        scroll_triggers.push(magic);
-  }
-      div.appendChild(magic);
-      content.appendChild(div);
+  async function animatedImage() {
+    const program = genProgram();
+    console.log(program);
+    const { c2, c3, e } = program;
+    const text = formatText(e);
+    const div = document.createElement('div');
+    const magic = document.createElement('div');
+    magic.classList.add("magic");
+    const code = document.createElement('pre');
+    code.innerText = text;
+    div.appendChild(code);
+    magic.appendChild(c2);
+    magic.appendChild(c3);
+    div.appendChild(magic);
+    content.appendChild(div);
+    let time = 0.0;
+    while (true) {
+      foo(time, program);
+      time += 0.016;
       await nextFrame();
     }
-    scroll_triggers.forEach(trigger => observer.observe(trigger));
   }
-  generateBatch();
+  animatedImage();
 </script>
   </div>
   </div>

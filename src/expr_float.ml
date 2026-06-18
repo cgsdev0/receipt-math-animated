@@ -1,6 +1,7 @@
 open! Core
 
 type t =
+  | T
   | X
   | Y
   | C of (float[@quickcheck.generator Base_quickcheck.Generator.float_inclusive 0. 1.])
@@ -31,55 +32,56 @@ let epsilon = 1e-6
    a corner at the centre but no jump). *)
 let fold v = Float.abs ((2. *. v) -. 1.)
 
-let rec eval ~x ~y t =
+let rec eval ~x ~y ~time t =
   match t with
+  | T -> time
   | X -> x
   | Y -> y
   | C c -> clamp01 c
   (* Probabilistic XOR: 0 when the inputs agree at the extremes, 1 when they disagree,
      smoothly interpolated in between. Stays within [0, 1]. *)
   | Xor (a, b) ->
-    let a = eval ~x ~y a
-    and b = eval ~x ~y b in
+    let a = eval ~x ~y ~time a
+    and b = eval ~x ~y ~time b in
     a +. b -. (2. *. a *. b)
   (* Fuzzy AND / OR via min / max: continuous, and they obey the absorption and
      idempotence laws that [simplify] relies on. *)
-  | And (a, b) -> Float.min (eval ~x ~y a) (eval ~x ~y b)
-  | Or (a, b) -> Float.max (eval ~x ~y a) (eval ~x ~y b)
+  | And (a, b) -> Float.min (eval ~x ~y ~time a) (eval ~x ~y ~time b)
+  | Or (a, b) -> Float.max (eval ~x ~y ~time a) (eval ~x ~y ~time b)
   (* Average rather than wrapping addition: stays in range with no discontinuity. *)
-  | Add (a, b) -> (eval ~x ~y a +. eval ~x ~y b) /. 2.
+  | Add (a, b) -> (eval ~x ~y ~time a +. eval ~x ~y ~time b) /. 2.
   (* Absolute difference: the continuous analogue of modular subtraction. *)
-  | Sub (a, b) -> Float.abs (eval ~x ~y a -. eval ~x ~y b)
-  | Mul (a, b) -> eval ~x ~y a *. eval ~x ~y b
+  | Sub (a, b) -> Float.abs (eval ~x ~y ~time a -. eval ~x ~y ~time b)
+  | Mul (a, b) -> eval ~x ~y ~time a *. eval ~x ~y ~time b
   (* A smooth, periodic stand-in for integer [mod]: the ratio [a / b] drives a raised
      cosine, so the output sweeps [0, 1] repeatedly as [a] grows with [b] setting the
      period. No sawtooth jump like a true remainder would have. *)
   | Mod (a, b) ->
-    let a = eval ~x ~y a
-    and b = eval ~x ~y b in
+    let a = eval ~x ~y ~time a
+    and b = eval ~x ~y ~time b in
     0.5 *. (1. -. Float.cos (Float.pi *. a /. (b +. epsilon)))
   (* [MirrorX] folds the [y] axis (leaving [x] untouched); [MirrorY] folds [x]. *)
-  | MirrorX a -> eval ~x ~y:(fold y) a
-  | MirrorY a -> eval ~x:(fold x) ~y a
+  | MirrorX a -> eval ~x ~y:(fold y) ~time a
+  | MirrorY a -> eval ~x:(fold x) ~y ~time a
   (* [Sin]/[Cos] sweep a full period as the argument crosses [0, 1], remapped from the
      natural [-1, 1] range of the trig functions into [0, 1]. Like every other operator they
      stay within the unit interval -- the invariant [simplify]'s identities depend on. *)
-  | Sin a -> Float.((sin (eval ~x ~y a * (2. * pi)) + 1.) / 2.)
-  | Cos a -> Float.((cos (eval ~x ~y a * (2. * pi)) + 1.) / 2.)
+  | Sin a -> Float.((sin (eval ~x ~y ~time a * (2. * pi)) + 1.) / 2.)
+  | Cos a -> Float.((cos (eval ~x ~y ~time a * (2. * pi)) + 1.) / 2.)
 ;;
 
 (* Fold a node whose children are both constants into a single constant by evaluating it.
    The coordinates are irrelevant: [const_fold] is only ever applied to nodes both of
    whose children are [C], none of which depend on [x]/[y]. Folding through [eval]
    guarantees the result matches [eval] exactly. *)
-let const_fold t = C (eval ~x:0. ~y:0. t)
+let const_fold t = C (eval ~x:0. ~y:0. ~time:0. t)
 
 (* Simplify a single node, assuming its children are already simplified. Every rewrite
    here is an exact algebraic identity of the operator semantics in [eval] above, so it
    preserves the evaluated value bit-for-bit. *)
 let simplify_node t =
   match t with
-  | X | Y -> t
+  | T | X | Y -> t
   | C n -> C (clamp01 n)
   (* subtraction is |a - b|; every value is >= 0, so subtracting 0 (from either side) is
      the identity, and [a - a = 0] *)
@@ -141,7 +143,7 @@ let simplify_node t =
 let rec simplify t =
   let t =
     match t with
-    | X | Y | C _ -> t
+    |T | X | Y | C _ -> t
     | Xor (a, b) -> Xor (simplify a, simplify b)
     | And (a, b) -> And (simplify a, simplify b)
     | Or (a, b) -> Or (simplify a, simplify b)
@@ -159,17 +161,18 @@ let rec simplify t =
 
 let rec stats t =
   match t with
-  | X -> 1, true, false
-  | Y -> 1, false, true
-  | C _ -> 1, false, false
+  | T -> 1, false, false, true
+  | X -> 1, true, false, false
+  | Y -> 1, false, true, false
+  | C _ -> 1, false, false, false
   | Xor (a, b) | And (a, b) | Or (a, b) | Add (a, b) | Sub (a, b) | Mul (a, b) | Mod (a, b)
     ->
-    let size_a, x_a, y_a = stats a in
-    let size_b, x_b, y_b = stats b in
-    size_a + size_b + 1, x_a || x_b, y_a || y_b
+    let size_a, x_a, y_a, t_a = stats a in
+    let size_b, x_b, y_b, t_b = stats b in
+    size_a + size_b + 1, x_a || x_b, y_a || y_b, t_a || t_b
   | MirrorX a | MirrorY a | Sin a | Cos a ->
-    let size, x, y = stats a in
-    size + 1, x, y
+    let size, x, y, time = stats a in
+    size + 1, x, y, time
 ;;
 
 let rec generate () =
@@ -177,8 +180,8 @@ let rec generate () =
     simplify
       (Quickcheck.random_value ~size:4 ~seed:`Nondeterministic quickcheck_generator)
   in
-  let size, x, y = stats t in
-  if size > 5 && x && y then t else generate ()
+  let size, x, y, time = stats t in
+  if size > 5 && x && y && time then t else generate ()
 ;;
 
 module For_testing = struct
