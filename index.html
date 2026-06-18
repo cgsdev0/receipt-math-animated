@@ -62,7 +62,6 @@ img, canvas {
 </head>
 <body>
   <div id="container">
-  <div id="loginDiv"></div>
   <div id="content"></div>
 <script src="main.js"></script>
 <script src="receipt_math.js"></script>
@@ -70,7 +69,6 @@ img, canvas {
   function nextFrame() {
     return new Promise(requestAnimationFrame);
   }
-  setupLoginSection();
   const p = window.location.hash === "#debug" ? ["X"] : [];
   const BATCH_SIZE = 1;
   const THRESHOLD = 0.7;
