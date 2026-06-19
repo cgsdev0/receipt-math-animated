@@ -64,8 +64,9 @@ let rec eval ~x ~y ~time t =
   | MirrorX a -> eval ~x ~y:(fold y) ~time a
   | MirrorY a -> eval ~x:(fold x) ~y ~time a
   (* [Sin]/[Cos] sweep a full period as the argument crosses [0, 1], remapped from the
-     natural [-1, 1] range of the trig functions into [0, 1]. Like every other operator they
-     stay within the unit interval -- the invariant [simplify]'s identities depend on. *)
+     natural [-1, 1] range of the trig functions into [0, 1]. Like every other operator
+     they stay within the unit interval -- the invariant [simplify]'s identities depend
+     on. *)
   | Sin a -> Float.((sin (eval ~x ~y ~time a * (2. * pi)) + 1.) / 2.)
   | Cos a -> Float.((cos (eval ~x ~y ~time a * (2. * pi)) + 1.) / 2.)
 ;;
@@ -143,7 +144,7 @@ let simplify_node t =
 let rec simplify t =
   let t =
     match t with
-    |T | X | Y | C _ -> t
+    | T | X | Y | C _ -> t
     | Xor (a, b) -> Xor (simplify a, simplify b)
     | And (a, b) -> And (simplify a, simplify b)
     | Or (a, b) -> Or (simplify a, simplify b)

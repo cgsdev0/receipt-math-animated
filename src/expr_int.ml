@@ -18,22 +18,94 @@ type t =
 
 let dimension = 256
 
-let rec to_frag p t =
+let rec to_frag_helper counter p t r =
+  incr counter;
+  let r1 = sprintf "r%d" !counter in
+  incr counter;
+  let r2 = sprintf "r%d" !counter in
   let scaled = dimension / Int.pow 2 p in
   match t with
-  | T -> "reg=time;\n"
-  | X -> "reg=x;\n"
-  | Y -> "reg=y;\n"
-  | C c -> sprintf "reg=%d;\n" c
-  | Xor (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a^b);\n" (to_frag p a) (to_frag p b)
-  | Or (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a|b);\n" (to_frag p a) (to_frag p b)
-  | And (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a&b);\n" (to_frag p a) (to_frag p b)
-  | Sub (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a-b);\n" (to_frag p a) (to_frag p b)
-  | Add (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a+b);\n" (to_frag p a) (to_frag p b)
-  | Mul (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a*b);\n" (to_frag p a) (to_frag p b)
-  | Mod (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=pmod(a,b);\n" (to_frag p a) (to_frag p b)
-  | MirrorX a -> sprintf "%sy=abs(abs((%d / 2) - y) - 1);\n" (to_frag p a) scaled
-  | MirrorY a -> sprintf "%sx=abs(abs((%d / 2) - x) - 1);\n"  (to_frag p a) scaled
+  | T -> sprintf "int %s=time;\n" r
+  | X -> sprintf "int %s=x;\n" r
+  | Y -> sprintf "int %s=y;\n" r
+  | C c -> sprintf "int %s=%d;\n" r c
+  | Xor (a, b) ->
+    sprintf
+      "%s%sint %s=pmod(%s^%s,256);\n"
+      (to_frag_helper counter p a r1)
+      (to_frag_helper counter p b r2)
+      r
+      r1
+      r2
+  | Or (a, b) ->
+    sprintf
+      "%s%sint %s=pmod(%s|%s,256);\n"
+      (to_frag_helper counter p a r1)
+      (to_frag_helper counter p b r2)
+      r
+      r1
+      r2
+  | And (a, b) ->
+    sprintf
+      "%s%sint %s=pmod(%s&%s,256);\n"
+      (to_frag_helper counter p a r1)
+      (to_frag_helper counter p b r2)
+      r
+      r1
+      r2
+  | Sub (a, b) ->
+    sprintf
+      "%s%sint %s=pmod(%s-%s,256);\n"
+      (to_frag_helper counter p a r1)
+      (to_frag_helper counter p b r2)
+      r
+      r1
+      r2
+  | Add (a, b) ->
+    sprintf
+      "%s%sint %s=pmod(%s+%s,256);\n"
+      (to_frag_helper counter p a r1)
+      (to_frag_helper counter p b r2)
+      r
+      r1
+      r2
+  | Mul (a, b) ->
+    sprintf
+      "%s%sint %s=pmod(%s*%s,256);\n"
+      (to_frag_helper counter p a r1)
+      (to_frag_helper counter p b r2)
+      r
+      r1
+      r2
+  | Mod (a, b) ->
+    sprintf
+      "%s%sint %s=pmod(%s,%s);\n"
+      (to_frag_helper counter p a r1)
+      (to_frag_helper counter p b r2)
+      r
+      r1
+      r2
+  | MirrorX a ->
+    sprintf
+      "%sy=abs(abs(%d-y)-1);\n // %s %s %s\n"
+      (to_frag_helper counter p a r)
+      (scaled / 2)
+      r
+      r1
+      r2
+  | MirrorY a ->
+    sprintf
+      "%sx=abs(abs(%d-x)-1);\n // %s %s %s\n"
+      (to_frag_helper counter p a r)
+      (scaled / 2)
+      r
+      r1
+      r2
+;;
+
+let to_frag p t =
+  let counter = ref 0 in
+  to_frag_helper counter p t "result"
 ;;
 
 let rec eval ~x ~y ~time p t =
@@ -173,7 +245,7 @@ let rec generate () =
     simplify
       (Quickcheck.random_value ~size:4 ~seed:`Nondeterministic quickcheck_generator)
   in
-  let size, x, y, time  = stats t in
+  let size, x, y, time = stats t in
   if size > 5 && x && y && time then t else generate ()
 ;;
 

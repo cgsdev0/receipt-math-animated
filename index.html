@@ -83,11 +83,16 @@ img, canvas {
   canvas.width = 512;
   canvas.height = 512;
   const program = genProgram();
+  console.log(program);
+  const [ rand, scale, numeric, gradient ] = program.params;
+  console.log(program.start);
+  console.log(program.end);
   const code = document.createElement('pre');
   code.innerText = program.e;
   document.body.appendChild(code);
   document.body.appendChild(canvas);
-  setupShader(canvas, program.frag);
+  setupShader(canvas, program.frag, program.start, program.end, scale);
+  console.log("scale: ", scale);
 
 /*
   async function animatedImage() {

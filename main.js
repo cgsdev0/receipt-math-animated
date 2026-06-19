@@ -14,20 +14,45 @@ precision highp float;
 out vec4 fragColor;
 uniform int time;
 
-int my(int a) { return a; }
-int mx(int a) { return a; }
+uniform int scale;
+
+uniform vec3 c1;
+uniform vec3 c2;
+
+vec3 oklab_mix(vec3 lin1, vec3 lin2, float a)
+{
+    // https://bottosson.github.io/posts/oklab
+    const mat3 kCONEtoLMS = mat3(
+         0.4121656120,  0.2118591070,  0.0883097947,
+         0.5362752080,  0.6807189584,  0.2818474174,
+         0.0514575653,  0.1074065790,  0.6302613616);
+    const mat3 kLMStoCONE = mat3(
+         4.0767245293, -1.2681437731, -0.0041119885,
+        -3.3072168827,  2.6093323231, -0.7034763098,
+         0.2307590544, -0.3411344290,  1.7068625689);
+
+    // rgb to cone (arg of pow can't be negative)
+    vec3 lms1 = pow( kCONEtoLMS*lin1, vec3(1.0/3.0) );
+    vec3 lms2 = pow( kCONEtoLMS*lin2, vec3(1.0/3.0) );
+    // lerp
+    vec3 lms = mix( lms1, lms2, a );
+    // gain in the middle (no oklab anymore, but looks better?)
+    lms *= 1.0+0.2*a*(1.0-a);
+    // cone to rgb
+    return kLMStoCONE*(lms*lms*lms);
+}
+
 int pmod(int a, int b) {
     int r = a % b;
     return r < 0 ? r + abs(b) : r;
 }
 
 void main() {
-int x = int(gl_FragCoord.x);
-int y = int(gl_FragCoord.y);
-int a, b, reg;
+int x = int(gl_FragCoord.x / float(scale)) * scale;
+int y = int(gl_FragCoord.y / float(scale)) * scale;
 ${frag}
-float res = float(reg);
-fragColor = vec4(vec3(res / 255.0), 1.0);
+float res = float(result);
+fragColor = vec4(oklab_mix(c1, c2, res / 255.0), 1.0);
 }
   `;
   console.log(result);
@@ -72,7 +97,7 @@ function buildShaderProgram(gl, shaderInfo) {
   return program;
 }
 
-function setupShader(canvas, frag) {
+function setupShader(canvas, frag, c1, c2, scale) {
   const gl = canvas.getContext("webgl2");
 
   const shaderSet = [
@@ -88,6 +113,9 @@ function setupShader(canvas, frag) {
 
   const shaderProgram = buildShaderProgram(gl, shaderSet);
   const timeLoc = gl.getUniformLocation(shaderProgram, "time");
+  const scaleLoc = gl.getUniformLocation(shaderProgram, "scale");
+  const c1Loc = gl.getUniformLocation(shaderProgram, "c1");
+  const c2Loc = gl.getUniformLocation(shaderProgram, "c2");
 
   // Vertex information
   const vertexArray = new Float32Array([
@@ -99,14 +127,10 @@ function setupShader(canvas, frag) {
   const vertexNumComponents = 2;
   const vertexCount = vertexArray.length / vertexNumComponents;
 
-  // Rendering data shared with the scalers.
-  let uScalingFactor;
-  let uGlobalColor;
-  let uRotationVector;
-  let aVertexPosition;
-
   // Animation timing
   let time = 0;
+  const [r1, g1, b1] = c1.map((a) => a / 255.0);
+  const [r2, g2, b2] = c2.map((a) => a / 255.0);
 
   const animateScene = () => {
     gl.viewport(0, 0, canvas.width, canvas.height);
@@ -115,6 +139,9 @@ function setupShader(canvas, frag) {
 
     gl.useProgram(shaderProgram);
     gl.uniform1i(timeLoc, time);
+    gl.uniform1i(scaleLoc, Math.pow(2, scale));
+    gl.uniform3f(c1Loc, r1, g1, b1);
+    gl.uniform3f(c2Loc, r2, g2, b2);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     aVertexPosition = gl.getAttribLocation(shaderProgram, "aVertexPosition");
