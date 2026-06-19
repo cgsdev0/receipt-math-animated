@@ -18,6 +18,24 @@ type t =
 
 let dimension = 256
 
+let rec to_frag p t =
+  let scaled = dimension / Int.pow 2 p in
+  match t with
+  | T -> "reg=time;\n"
+  | X -> "reg=x;\n"
+  | Y -> "reg=y;\n"
+  | C c -> sprintf "reg=%d;\n" c
+  | Xor (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a^b);\n" (to_frag p a) (to_frag p b)
+  | Or (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a|b);\n" (to_frag p a) (to_frag p b)
+  | And (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a&b);\n" (to_frag p a) (to_frag p b)
+  | Sub (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a-b);\n" (to_frag p a) (to_frag p b)
+  | Add (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a+b);\n" (to_frag p a) (to_frag p b)
+  | Mul (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=(a*b);\n" (to_frag p a) (to_frag p b)
+  | Mod (a, b) -> sprintf "%sa=reg;\n%sb=reg;\nreg=pmod(a,b);\n" (to_frag p a) (to_frag p b)
+  | MirrorX a -> sprintf "%sy=abs(abs((%d / 2) - y) - 1);\n" (to_frag p a) scaled
+  | MirrorY a -> sprintf "%sx=abs(abs((%d / 2) - x) - 1);\n"  (to_frag p a) scaled
+;;
+
 let rec eval ~x ~y ~time p t =
   let scaled = dimension / Int.pow 2 p in
   match t with

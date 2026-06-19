@@ -135,8 +135,8 @@ let main () =
          match Js.Optdef.to_option program with
          | None ->
            (match Param.numeric params with
-            | `int -> Int (Expr_int.generate ())
-            | `float -> Float (Expr_float.generate ()))
+            | `int | `float -> Int (Expr_int.generate ()))
+            (* | `float -> Float (Expr_float.generate ())) *)
          | Some s ->
            let s = s |> Js.to_string |> Sexp.of_string in
            (match Param.numeric params with
@@ -165,6 +165,12 @@ let main () =
          val t = Js.Unsafe.inject t
          val c2 = Js.Unsafe.inject c2
          val c3 = Js.Unsafe.inject c3
+         val frag =
+  Js.string
+    (match t with
+     | Int t -> Expr_int.to_frag (Param.scale params) t
+     | Float _ -> failwith "Expr_float not implemented yet")
+
          val e =
            Js.string
              (equation

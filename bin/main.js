@@ -1,3 +1,143 @@
+const vertexShaderSrc = `#version 300 es
+in vec2 aVertexPosition;
+out vec2 vUv;
+
+void main() {
+  vUv = aVertexPosition * 0.5 + 0.5;
+  gl_Position = vec4(aVertexPosition, 0.0, 1.0);
+}
+`;
+
+function fragmentTemplate(frag) {
+  result = `#version 300 es
+precision highp float;
+out vec4 fragColor;
+uniform int time;
+
+int my(int a) { return a; }
+int mx(int a) { return a; }
+int pmod(int a, int b) {
+    int r = a % b;
+    return r < 0 ? r + abs(b) : r;
+}
+
+void main() {
+int x = int(gl_FragCoord.x);
+int y = int(gl_FragCoord.y);
+int a, b, reg;
+${frag}
+float res = float(reg);
+fragColor = vec4(vec3(res / 255.0), 1.0);
+}
+  `;
+  console.log(result);
+  return result;
+}
+
+function compileShader(gl, code, type) {
+  const shader = gl.createShader(type);
+
+  gl.shaderSource(shader, code);
+  gl.compileShader(shader);
+
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    console.log(
+      `Error compiling ${
+        type === gl.VERTEX_SHADER ? "vertex" : "fragment"
+      } shader:`,
+    );
+    console.log(gl.getShaderInfoLog(shader));
+  }
+  return shader;
+}
+
+function buildShaderProgram(gl, shaderInfo) {
+  const program = gl.createProgram();
+
+  shaderInfo.forEach((desc) => {
+    const shader = compileShader(gl, desc.code, desc.type);
+
+    if (shader) {
+      gl.attachShader(program, shader);
+    }
+  });
+
+  gl.linkProgram(program);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.log("Error linking shader program:");
+    console.log(gl.getProgramInfoLog(program));
+  }
+
+  return program;
+}
+
+function setupShader(canvas, frag) {
+  const gl = canvas.getContext("webgl2");
+
+  const shaderSet = [
+    {
+      type: gl.VERTEX_SHADER,
+      code: vertexShaderSrc,
+    },
+    {
+      type: gl.FRAGMENT_SHADER,
+      code: fragmentTemplate(frag),
+    },
+  ];
+
+  const shaderProgram = buildShaderProgram(gl, shaderSet);
+  const timeLoc = gl.getUniformLocation(shaderProgram, "time");
+
+  // Vertex information
+  const vertexArray = new Float32Array([
+    -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0, -1.0,
+  ]);
+  const vertexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, vertexArray, gl.STATIC_DRAW);
+  const vertexNumComponents = 2;
+  const vertexCount = vertexArray.length / vertexNumComponents;
+
+  // Rendering data shared with the scalers.
+  let uScalingFactor;
+  let uGlobalColor;
+  let uRotationVector;
+  let aVertexPosition;
+
+  // Animation timing
+  let time = 0;
+
+  const animateScene = () => {
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.useProgram(shaderProgram);
+    gl.uniform1i(timeLoc, time);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    aVertexPosition = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+
+    gl.enableVertexAttribArray(aVertexPosition);
+    gl.vertexAttribPointer(
+      aVertexPosition,
+      vertexNumComponents,
+      gl.FLOAT,
+      false,
+      0,
+      0,
+    );
+
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+
+    requestAnimationFrame(() => {
+      animateScene();
+      time++;
+    });
+  };
+  animateScene();
+}
 function parseCookies(cookieString) {
   const cookies = cookieString.split("; ");
   const cookiesDict = {};

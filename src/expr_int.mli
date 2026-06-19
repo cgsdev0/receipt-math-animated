@@ -19,6 +19,7 @@ type t =
 val generate : unit -> t
 val dimension : int
 val eval : x:int -> y:int -> time:float -> int -> t -> int
+val to_frag : int -> t -> string
 
 module For_testing : sig
   val simplify : t -> t
