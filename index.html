@@ -69,7 +69,7 @@ img, canvas {
   function nextFrame() {
     return new Promise(requestAnimationFrame);
   }
-  const p = window.location.hash === "#debug" ? ["X"] : [];
+  const p = window.location.hash === "#debug" ? ["(MirrorX (MirrorY (Sub (Xor X Y) (MirrorY (C 20)))))"] : [];
   const BATCH_SIZE = 1;
   const THRESHOLD = 0.7;
 
@@ -82,7 +82,7 @@ img, canvas {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
-  const program = genProgram();
+  const program = genProgram(p[0]);
   console.log(program);
   const [ rand, scale, numeric, gradient ] = program.params;
   console.log(program.start);

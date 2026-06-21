@@ -87,20 +87,26 @@ let rec to_frag_helper counter p t r =
       r2
   | MirrorX a ->
     sprintf
-      "%sy=abs(abs(%d-y)-1);\n // %s %s %s\n"
-      (to_frag_helper counter p a r)
-      (scaled / 2)
-      r
+      "int %s=y;\ny=abs(abs(%d-y)-1);%sy=%s;\n"
       r1
-      r2
+      (scaled / 2)
+      (to_frag_helper counter p a r)
+      r1
   | MirrorY a ->
     sprintf
-      "%sx=abs(abs(%d-x)-1);\n // %s %s %s\n"
-      (to_frag_helper counter p a r)
-      (scaled / 2)
-      r
+      "int %s=x;\nx=abs(abs(%d-x)-1);%sx=%s;\n"
       r1
-      r2
+      (scaled / 2)
+      (to_frag_helper counter p a r)
+      r1
+  (* | MirrorY a -> *)
+  (*   sprintf *)
+  (*     "%sx=abs(abs(%d-x)-1);\n // %s %s %s\n" *)
+  (*     (to_frag_helper counter p a r) *)
+  (*     (scaled / 2) *)
+  (*     r *)
+  (*     r1 *)
+  (*     r2 *)
 ;;
 
 let to_frag p t =
