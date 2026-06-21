@@ -203,8 +203,10 @@ let simplify_node t =
   (* [MirrorX] only changes the [y] coordinate, so anything that does not depend on [y]
      passes through unchanged. Double-mirror is *not* an identity: [eval]'s reflection is
      not an involution. *)
+  | MirrorX (T) -> T
   | MirrorX (C _ as a) -> a
   | MirrorX X -> X
+  | MirrorY (T) -> T
   | MirrorY (C _ as a) -> a
   | MirrorY Y -> Y
   (* fallthrough *)

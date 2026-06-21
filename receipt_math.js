@@ -8638,9 +8638,9 @@ f=a+1|0,h=[0,b,0];return p(T,KW,function(a){return N(a,f,d,function(b){var
 a=A(e)-A(b)|0;function
 d(a){return c([0,a,h])}if(0>=a)return d(b);var
 f=cA(a/2|0,61),g=cA(a-(a/2|0)|0,61);return p(T,KX,function(a){return ak(a,f,b,g,d)})})})},function(a){return c(aG(KY,[0,e,a]))})})})})})},c[3],function(c,b){function
-e(a){function
-d(a){return a?b(U(f,U(K0,c))):b(c)}if(!a)return d(0);var
-g=a[2];return r(fM,fs,c,a[1],function(a){return a?d(1):O(e,g)})}return e(KZ)},a,function(d,b){return p(a,function(a,b){return p(c[2],d,b)},b)}])})})}var
+d(a){function
+e(a){return a?b(U(f,U(K0,c))):b(c)}if(!a)return e(0);var
+g=a[2];return r(fM,fs,c,a[1],function(a){return a?e(1):O(d,g)})}return d(KZ)},a,function(d,b){return p(a,function(a,b){return p(c[2],d,b)},b)}])})})}var
 d6=d4(0,0);function
 jW(a,b){var
 c=d6[1],d=c?[0,c[1][4]]:0;return d?b(d[1]):p(al,K5,b)}g(jV,[cm]);function
@@ -9540,15 +9540,15 @@ r3=[0,[0,1.,bn(cI)],0],r4=[0,[0,1.,bn(0)],r3],r5=[0,[0,dq,ed(aj2)],r4],r6=[0,[0,
 lu=[W,akt,$(0)];g(av,[0,s,lu,function(a,b){if(a===lu)return b(aku);var
 c=y();return c(t([0,B,akv],1))}]);K(akw);if(w())g(M,[s]);G();I(akx);H(aky);F(akz);if(w())g(L,[akA]);g(J,[akC,akB]);ae([0,akD]);function
 g3(a,b,c){function
-n(a){return b===0?c(a):q(io,0,a,function(d){var
+m(a){return b===0?c(a):q(io,0,a,function(d){var
 h=A(d)-1|0,g=[0,0],e=[0,0],a=[0,0],i=[0,0];function
-m(){var
-j=e[1],k=g[1],o=1-a[1];if(i[1])return O(n,mF(d,function(a){return a!==95?1:0}));if(o)return c(d);if(j){var
+n(){var
+j=e[1],k=g[1],o=1-a[1];if(i[1])return O(m,mF(d,function(a){return a!==95?1:0}));if(o)return c(d);if(j){var
 f=j[1];return q(dP,d,f+1|0,function(a){return p(fG,a,function(a){var
 e=a+b|0;if(e===0)return q(eo,d,f,c);var
 g=[0,bA(e),0],h=0<e?akE:akF,i=[0,h,g];return q(eo,d,f+1|0,function(a){return c(aG(0,[0,a,i]))})})})}var
 l=P(d,0)===45,h=l||P(d,0)===43;function
-m(a){function
+n(a){function
 e(a,b){var
 i=A(a);return q(fN,[0,function(a){return 48===a?1:0}],a,function(d){var
 e=(b+i|0)-A(d)|0,g=A(d);function
@@ -9556,11 +9556,11 @@ f(a){if(!h)return c(a);var
 b=l?akG:akH;return c(U(b,a))}if(e===0)return f(d);if(0<e)return f(U(d,cA(e,48)));if((-g|0)>=e)return f(aG(0,[0,akJ,[0,cA((-e|0)-g|0,48),[0,d,0]]]));var
 a=-e|0;return bg(en,d,a,EU,A(d)-a|0,a,d,function(a){var
 b=[0,akI,[0,a,0]];return q(im,d,-e|0,function(a){return f(aG(0,[0,a,b]))})})})}if(!k)return e(a,b);var
-f=k[1],g=h?1:0,d=f-g|0;return q(dP,a,d+1|0,function(c){return q(eo,a,d,function(a){return q(io,[0,function(a){return 48===a?1:0}],U(a,c),function(a){return e(a,b-A(c)|0)})})})}return h?q(dP,d,1,m):m(d)}function
+f=k[1],g=h?1:0,d=f-g|0;return q(dP,a,d+1|0,function(c){return q(eo,a,d,function(a){return q(io,[0,function(a){return 48===a?1:0}],U(a,c),function(a){return e(a,b-A(c)|0)})})})}return h?q(dP,d,1,n):n(d)}function
 j(f){var
 c=P(d,f);function
 b(a){var
-b=f+1|0;return h!==f?O(j,b):m()}if(95===c){i[1]=1;return b(0)}a:{if(70<=c){if(f0!==c)break a}else{if(43>c)break a;switch(c+f1|0){case
+b=f+1|0;return h!==f?O(j,b):n()}if(95===c){i[1]=1;return b(0)}a:{if(70<=c){if(f0!==c)break a}else{if(43>c)break a;switch(c+f1|0){case
 3:var
 k=function(a){g[1]=[0,f];return b(0)};if(!ek(g[1]))return k(0);return p(bz,akM,function(a){return N(a,d,0,k)});case
 26:break;case
@@ -9576,7 +9576,7 @@ k=function(a){g[1]=[0,f];return b(0)};if(!ek(g[1]))return k(0);return p(bz,akM,f
 12:case
 13:case
 14:return mE(e[1])?(a[1]=1,b(0)):b(0);default:break a}}var
-l=function(a){e[1]=[0,f];return b(0)};if(!ek(e[1]))return l(0);return p(bz,akK,function(a){return N(a,d,0,l)})}return p(bz,akL,function(a){return ak(a,c,d,0,b)})}return h<0?m():j(0)})}return n(a)}var
+l=function(a){e[1]=[0,f];return b(0)};if(!ek(e[1]))return l(0);return p(bz,akK,function(a){return N(a,d,0,l)})}return p(bz,akL,function(a){return ak(a,c,d,0,b)})}return h<0?n():j(0)})}return m(a)}var
 mr=1e-6;if(typeof
 cC()!=="number"&&!bZ){var
 lT=g(cE,[cm]),su=[0,[0,0,g(cD,[[0,aN],aqq,aqp])],0];g(lT[4],[aqv,138,aqu,aqt,aqs,[0,aN],0,1,2,aqr,0,bD,su,function(a,b){function
@@ -9994,10 +9994,14 @@ d==="number")break;if(3!==d[0])break;var
 H=a[2],U=d[2];if(!an(H,d[1])&&!an(H,U))break;return b(d)}return b(apu);case
 4:var
 l=a[1];if(typeof
-l==="number"){if(1===l)return b(1)}else if(0===l[0])return b(l);break;case
+l==="number")switch(l){case
+0:return b(0);case
+1:return b(1)}else if(0===l[0])return b(l);break;case
 5:var
 m=a[1];if(typeof
-m==="number"){if(2===m)return b(2)}else if(0===m[0])return b(m);break;case
+m==="number")switch(m){case
+0:return b(0);case
+2:return b(2)}else if(0===m[0])return b(m);break;case
 6:var
 n=a[1];if(typeof
 n!=="number"&&0===n[0]){var
@@ -10127,18 +10131,18 @@ f(a){var
 k=a[3],b=a[2],e=a[1],f=hC(e,fo,fY),g=hC(e,-Infinity,fZ)-f;function
 h(w){var
 l=lC(aqd,j),m=lD(0,0,0,0,l);function
-q(i){var
+r(i){var
 a=fb(b,b_,i);function
-r(j){return Z(lS,w,b,k,fb(b,b_,j),a,function(a){return p(iF,a*hi,function(a){lF(m,j,i,a,a,a,aL);var
-u=j+1|0,f=511;if(f!==j)return O(r,u);var
-t=i+1|0;if(f!==i)return O(q,t);lE(0,0,0,0,l,m,0,0);var
+s(j){return Z(lS,w,b,k,fb(b,b_,j),a,function(a){return p(iF,a*hi,function(a){lF(m,j,i,a,a,a,aL);var
+u=j+1|0,f=511;if(f!==j)return O(s,u);var
+t=i+1|0;if(f!==i)return O(r,t);lE(0,0,0,0,l,m,0,0);var
 n=lC(aqe,v),o=lD(0,0,0,0,n),e=d[3],g=lM(d),h=lR(d);function
-s(d){var
+q(d){var
 a=fb(b,b_,d);function
 j(i){return Z(lS,w,b,k,fb(b,b_,i),a,function(a){var
 b=hg===e?a*a:hq<=e?hm<=e?Math.sin(a*fj):(Math.cos(a*fj-fj)+1.)/2.:hn<=e?a:Math.sqrt(a),k=g$(g[1],h[1],b),l=g$(g[2],h[2],b);return p(g8,[cc,k,l,g$(g[3],h[3],b)],function(a){lF(o,i,d,a[1],a[2],a[3],aL);var
 e=i+1|0;if(f!==i)return O(j,e);var
-b=d+1|0;return f!==d?O(s,b):c(lE(0,0,0,0,n,o,0,0))})})}return j(0)}return s(0)})})}return r(0)}return q(0)}return g===0.?h(e):q(mD,e,function(a,b){return b((a-f)/g)},h)}if(0===a[0]){var
+b=d+1|0;return f!==d?O(q,b):c(lE(0,0,0,0,n,o,0,0))})})}return j(0)}return q(0)})})}return s(0)}return r(0)}return g===0.?h(e):q(mD,e,function(a,b){return b((a-f)/g)},h)}if(0===a[0]){var
 e=d[1],g=a[1];return q(fF,2,e,function(a){var
 c=eK(bb,a);return q(dv,ct(c,c),function(a,b){var
 d=eK(a,c);return q(bv,a,c,function(a){return Z(a_,a,d,i,e,g,function(a){return b(a/hi)})})},function(a){return f([0,a,c,mo])})})}var
