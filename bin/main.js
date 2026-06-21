@@ -129,6 +129,7 @@ function setupShader(canvas, frag, c1, c2, scale) {
 
   // Animation timing
   let time = 0;
+  let prev = 0;
   const [r1, g1, b1] = c1.map((a) => a / 255.0);
   const [r2, g2, b2] = c2.map((a) => a / 255.0);
 
@@ -138,7 +139,7 @@ function setupShader(canvas, frag, c1, c2, scale) {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(shaderProgram);
-    gl.uniform1i(timeLoc, time);
+    gl.uniform1i(timeLoc, Math.floor(time));
     gl.uniform1i(scaleLoc, Math.pow(2, scale));
     gl.uniform3f(c1Loc, r1, g1, b1);
     gl.uniform3f(c2Loc, r2, g2, b2);
@@ -158,9 +159,11 @@ function setupShader(canvas, frag, c1, c2, scale) {
 
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame((current) => {
       animateScene();
-      time++;
+      let delta = ((current - prev) / 1000.0) * 60.0;
+      time += delta / (scale + 1);
+      prev = current;
     });
   };
   animateScene();
