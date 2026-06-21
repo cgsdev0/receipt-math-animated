@@ -89,14 +89,14 @@ let rec to_frag_helper counter p t r =
     sprintf
       "int %s=y;\ny=abs(abs(%d-y)-1);%sy=%s;\n"
       r1
-      (scaled / 2)
+      (scaled)
       (to_frag_helper counter p a r)
       r1
   | MirrorY a ->
     sprintf
       "int %s=x;\nx=abs(abs(%d-x)-1);%sx=%s;\n"
       r1
-      (scaled / 2)
+      (scaled)
       (to_frag_helper counter p a r)
       r1
   (* | MirrorY a -> *)

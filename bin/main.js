@@ -48,8 +48,8 @@ int pmod(int a, int b) {
 }
 
 void main() {
-int x = int(gl_FragCoord.x / float(scale)) * scale;
-int y = int(gl_FragCoord.y / float(scale)) * scale;
+int x = int(gl_FragCoord.x / float(scale));
+int y = int(gl_FragCoord.y / float(scale));
 ${frag}
 float res = float(result);
 fragColor = vec4(oklab_mix(c1, c2, res / 255.0), 1.0);
