@@ -69,7 +69,7 @@ img, canvas {
   function nextFrame() {
     return new Promise(requestAnimationFrame);
   }
-  const p = window.location.hash === "#debug" ? ["(MirrorX (MirrorY (Sub (Xor X Y) (MirrorY T))))"] : [];
+  const p = window.location.hash.length > 1 ? JSON.parse(atob(window.location.hash.slice(1))) : [];
   const BATCH_SIZE = 1;
   const THRESHOLD = 0.7;
 
@@ -82,7 +82,9 @@ img, canvas {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
-  const program = genProgram(p[0]);
+  console.log(p);
+  const program = genProgram(p[0], p[1]);
+  window.location.hash = "#" + btoa(JSON.stringify([ program.paramsexp, program.e ]));
   console.log(program);
   const [ rand, scale, numeric, gradient ] = program.params;
   console.log(program.start);
@@ -93,6 +95,16 @@ img, canvas {
   document.body.appendChild(canvas);
   setupShader(canvas, program.frag, program.start, program.end, scale);
   console.log("scale: ", scale);
+  const a = document.createElement('a');
+  let url = new URL(window.location);
+  url.hash = "";
+  a.href = url;
+  a.innerText = "NEXT"
+  document.body.appendChild(document.createElement('br'));
+  document.body.appendChild(a);
+  a.focus();
+
+
 
 /*
   async function animatedImage() {

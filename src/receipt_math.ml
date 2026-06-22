@@ -130,34 +130,28 @@ let to_greyscale image_data grid ~size ~out ~filter =
 
 let main () =
   Js.Unsafe.global##.genProgram
-  := Js.wrap_callback (fun (program : Js.js_string Js.t Js.Optdef.t) ->
-       let params = Param.random () in
+  := Js.wrap_callback (fun (paramstr : Js.js_string Js.t Js.Optdef.t) (program : Js.js_string Js.t Js.Optdef.t) ->
+       let params = match Js.Optdef.to_option paramstr with
+       | None -> Param.random ()
+       | Some s -> [%of_sexp: Param.t] (s |> Js.to_string |> Sexp.of_string)
+       in
        let t =
          match Js.Optdef.to_option program with
          | None ->
            (match Param.numeric params with
-            | `int | `float -> Int (Expr_int.generate ()))
+            | `int -> Int (Expr_int.generate ()))
            (* | `float -> Float (Expr_float.generate ())) *)
          | Some s ->
            let s = s |> Js.to_string |> Sexp.of_string in
            (match Param.numeric params with
-            | `int -> Int ([%of_sexp: Expr_int.t] s)
-            | `float -> Float ([%of_sexp: Expr_float.t] s))
+            | `int -> Int ([%of_sexp: Expr_int.t] s))
+            (* | `float -> Float ([%of_sexp: Expr_float.t] s)) *)
        in
        let equation =
          match t with
          | Int t -> Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr_int.t] t)
-         | Float t ->
-           Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr_float.t] t)
-       in
-       let numeric_str =
-         params |> Param.numeric |> [%sexp_of: [ `int | `float ]] |> Sexp.to_string
-       in
-       let gradient_str =
-         params
-         |> Param.gradient
-         |> [%sexp_of: [ `linear | `square | `sqrt | `sin | `cos ]]
-         |> Sexp.to_string
+         (* | Float t -> *)
+         (*   Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr_float.t] t) *)
        in
        let out = output_dimension in
        let r, g, b = Oklab.to_rgb (Param.get_start_color params) in
@@ -165,6 +159,7 @@ let main () =
        let c2 = Canvas.create ~width:out ~height:out in
        let c3 = Canvas.create ~width:out ~height:out in
        object%js
+         val paramsexp = params |> [%sexp_of: Param.t] |> Sexp.to_string |> Js.string
          val start_color = Js.array [| r; g; b |]
          val end_color = Js.array [| r2; g2; b2 |]
          val params = Js.Unsafe.inject params
@@ -180,12 +175,7 @@ let main () =
 
          val e =
            Js.string
-             (equation
-              ^ sprintf
-                  "\nScale: %d\nNumeric: %s\nGradient: %s"
-                  (Param.scale params)
-                  numeric_str
-                  gradient_str)
+             (equation)
        end);
   Js.Unsafe.global##.foo
   := Js.wrap_callback

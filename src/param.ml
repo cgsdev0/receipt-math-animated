@@ -54,8 +54,8 @@ module Hue_delta = Bound_float (struct
 
 type t =
   { scale : Scale.t
-  ; numeric : [ `int | `float ]
-  ; gradient : [ `linear | `square | `sqrt | `sin | `cos ]
+  ; numeric : [ `int ]
+  ; gradient : [ `linear ]
   ; lightness : Lightness.t
   ; lightness_delta : Lightness_delta.t
   ; chroma : Chroma.t
@@ -63,7 +63,7 @@ type t =
   ; hue : Hue.t
   ; hue_delta : Hue_delta.t
   }
-[@@deriving quickcheck, sexp_of, equal]
+[@@deriving quickcheck, sexp, equal]
 
 let random () = Quickcheck.random_value ~seed:`Nondeterministic quickcheck_generator
 let scale { scale; _ } = scale
