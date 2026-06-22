@@ -146,6 +146,14 @@ let rec eval ~x ~y ~time p t =
    arithmetic. *)
 let const_fold t = C (eval ~x:0 ~y:0 ~time:0.0 0 t)
 
+let rec contains node t =
+  if equal node t then true else
+    match t with
+    | X | Y | C _ | T -> false
+    | Xor (a, b) | And(a, b) | Or(a, b) | Add(a, b) | Sub(a, b) | Mul(a, b) | Mod(a, b) -> (contains node a || contains node b)
+    | MirrorX a | MirrorY a -> contains node a
+;;
+
 (* Simplify a single node, assuming its children are already simplified. This step is
    non-recursive: it never calls [simplify] on subtrees, it only inspects the
    (already-simplified) immediate children to fold constants and apply algebraic
@@ -203,12 +211,8 @@ let simplify_node t =
   (* [MirrorX] only changes the [y] coordinate, so anything that does not depend on [y]
      passes through unchanged. Double-mirror is *not* an identity: [eval]'s reflection is
      not an involution. *)
-  | MirrorX (T) -> T
-  | MirrorX (C _ as a) -> a
-  | MirrorX X -> X
-  | MirrorY (T) -> T
-  | MirrorY (C _ as a) -> a
-  | MirrorY Y -> Y
+  | MirrorX a -> (if contains Y a then t else a)
+  | MirrorY a -> (if contains X a then t else a)
   (* fallthrough *)
   | t -> t
 ;;
