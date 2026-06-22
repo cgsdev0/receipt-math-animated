@@ -55,7 +55,7 @@ float res = float(result);
 fragColor = vec4(oklab_mix(c1, c2, res / 255.0), 1.0);
 }
   `;
-  console.log(result);
+  // console.log(result);
   return result;
 }
 
@@ -128,7 +128,6 @@ function setupShader(canvas, frag, c1, c2, scale) {
   const vertexCount = vertexArray.length / vertexNumComponents;
 
   // Animation timing
-  let time = 0;
   let prev = 0;
   const [r1, g1, b1] = c1.map((a) => a / 255.0);
   const [r2, g2, b2] = c2.map((a) => a / 255.0);
@@ -139,7 +138,7 @@ function setupShader(canvas, frag, c1, c2, scale) {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     gl.useProgram(shaderProgram);
-    gl.uniform1i(timeLoc, Math.floor(time));
+    gl.uniform1i(timeLoc, Math.floor(animateScene.time));
     gl.uniform1i(scaleLoc, Math.pow(2, scale));
     gl.uniform3f(c1Loc, r1, g1, b1);
     gl.uniform3f(c2Loc, r2, g2, b2);
@@ -160,13 +159,47 @@ function setupShader(canvas, frag, c1, c2, scale) {
     gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
 
     requestAnimationFrame((current) => {
+      if (!animateScene.running) {
+        return;
+      }
+
       animateScene();
-      let delta = ((current - prev) / 1000.0) * 60.0;
-      time += delta / (scale + 1);
-      prev = current;
+      let delta = ((current - animateScene.prev) / 1000.0) * 60.0;
+      animateScene.time += delta / (scale + 1);
+      animateScene.prev = current;
     });
   };
+  Object.assign(animateScene, {
+    running: false,
+    prev: document.timeline.currentTime,
+    time: 0,
+  });
   animateScene();
+  return {
+    end: () => {
+      Object.assign(animateScene, { running: false });
+    },
+    start: () => {
+      Object.assign(animateScene, {
+        running: true,
+        prev: document.timeline.currentTime,
+        time: 0,
+      });
+      animateScene();
+    },
+    destroy: () => {
+      if (animateScene.destroyed) return; // guard against double-cleanup
+      animateScene.destroyed = true;
+      animateScene.running = false;
+
+      // grab attached shaders before deleting the program
+      const attached = gl.getAttachedShaders(shaderProgram) || [];
+      attached.forEach((shader) => gl.deleteShader(shader));
+
+      gl.deleteBuffer(vertexBuffer);
+      gl.deleteProgram(shaderProgram);
+    },
+  };
 }
 function parseCookies(cookieString) {
   const cookies = cookieString.split("; ");

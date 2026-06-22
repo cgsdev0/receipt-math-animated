@@ -147,9 +147,14 @@ let main () =
             | `int -> Int ([%of_sexp: Expr_int.t] s))
             (* | `float -> Float ([%of_sexp: Expr_float.t] s)) *)
        in
+       let title =
+         match t with
+         | Int t -> Expr_int.to_string t
+       in
+
        let equation =
          match t with
-         | Int t -> Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr_int.t] t)
+         | Int t -> Sexp.to_string ([%sexp_of: Expr_int.t] t)
          (* | Float t -> *)
          (*   Sexp.to_string_hum ~indent:2 ~max_width:42 ([%sexp_of: Expr_float.t] t) *)
        in
@@ -176,6 +181,9 @@ let main () =
          val e =
            Js.string
              (equation)
+         val title =
+           Js.string
+             (title)
        end);
   Js.Unsafe.global##.foo
   := Js.wrap_callback
