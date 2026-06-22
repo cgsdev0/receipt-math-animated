@@ -255,7 +255,7 @@ let rec stats t =
 let rec generate () =
   let t =
     simplify
-      (Quickcheck.random_value ~size:4 ~seed:`Nondeterministic quickcheck_generator)
+      (Quickcheck.random_value ~size:6 ~seed:`Nondeterministic quickcheck_generator)
   in
   let size, x, y, time = stats t in
   if size > 5 && x && y && time then t else generate ()
