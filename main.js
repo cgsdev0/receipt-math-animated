@@ -55,7 +55,7 @@ float res = float(result);
 fragColor = vec4(oklab_mix(c1, c2, res / 255.0), 1.0);
 }
   `;
-  // console.log(result);
+  console.log(result);
   return result;
 }
 
