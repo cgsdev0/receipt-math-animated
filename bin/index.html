@@ -104,7 +104,7 @@
     setInterval(() => {
       idx += 1;
       idx = idx % 3;
-      document.querySelector(`.slide-${idx}`).scrollIntoView({
+      document.querySelector(`.slide-${idx + 1}`).scrollIntoView({
         behavior: "smooth",
         block: "start"
       });
