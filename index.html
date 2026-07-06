@@ -99,6 +99,17 @@
     });
   }
 
+  let idx = 0;
+  if (new URLSearchParams(window.location.search).get('auto') === "true") {
+    setInterval(() => {
+      idx += 1;
+      idx = idx % 3;
+      document.querySelector(`.slide-${idx}`).scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }, 1000);
+  }
   const stack = window.location.hash.length > 1 ? [JSON.parse(atob(window.location.hash.slice(1)))] : [];
   console.log(stack);
   function initCanvas(canvas, idx)  {
